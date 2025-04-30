@@ -1,0 +1,18 @@
+﻿# Pester / PowerShell specific
+**/Pester_Output/
+**/TestResults/
+TestResults.xml
+junit.xml
+nunit.xml
+
+# VS Code specific
+.vscode/
+
+# macOS specific
+.DS_Store
+
+# Environment files (if you use a .env pattern)
+# .env
+
+# Configuration files (if you create local overrides)
+# config.local.ps1
