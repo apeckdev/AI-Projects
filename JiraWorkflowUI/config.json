@@ -1,0 +1,9 @@
+{
+    "JiraUrl": "https://your-domain.atlassian.net",
+    "ApiToken": "YOUR_JIRA_API_TOKEN",
+    "Email": "your.email@example.com",
+    "DevProjectKey": "DEV",
+    "TstProjectKey": "TST",
+    "Username": "your_jira_username",
+    "MaxResultsPerQuery": 100
+  }
