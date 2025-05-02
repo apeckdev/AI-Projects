@@ -12,7 +12,7 @@ The main script (`JiraActionBoard.ps1`) sets up the UI, which displays tickets i
 
 A `-TestMode` switch allows running the application with generated fake data, bypassing the need for a live Jira connection or configuration, useful for UI development or demonstration.
 
-![Jira Action Board Screenshot](./images/jira-action.png)
+![Jira Action Board Screenshot](./screenshots/jira-action.png)
 
 ## Features
 
