@@ -31,17 +31,8 @@ Here's a summary of the projects included in this repository. **For detailed set
 
 ---
 
-### 2. Gemini Assistant - Godot Editor Plugin
 
-*   **Directory:** [`./Gemini-Assistant-Godot/`](./Gemini-Assistant-Godot/) *(Assuming a directory name, adjust if different)*
-*   **Description:** A plugin for the Godot game engine editor that integrates Google's Gemini AI models. Allows sending prompts and project context (code, scene info) to the external Gemini API for assistance with coding, debugging, etc.
-*   **Technology Stack:** Godot (GDScript), Google Gemini API
-*   **Purpose:** Demonstrates direct integration of a cloud-based AI assistant into a development environment. **Note:** Requires an API key and sends data externally.
-*   **Status:** Plugin / Tool
-
----
-
-### 3. Gemma Training - Gherkin Generation from CSV
+### 2. Gemma Training - Gherkin Generation from CSV
 
 *   **Directory:** [`./Gemma-Training/`](./Gemma-Training/)
 *   **Description:** A PowerShell script that uses **locally running** Large Language Models (LLMs like Gemma, Llama 3) via the Ollama framework to generate Gherkin test scenarios (`.feature` file content) from structured data in a CSV file.
@@ -51,7 +42,7 @@ Here's a summary of the projects included in this repository. **For detailed set
 
 ---
 
-### 4. OpenAPI to Pester Test Suite Generator
+### 3. OpenAPI to Pester Test Suite Generator
 
 *   **Directory:** [`./Generate-PesterSuite/`](./Generate-PesterSuite/) *(Assuming a directory name, adjust if different)*
 *   **Description:** A PowerShell script that parses an OpenAPI (v2/v3) specification file (JSON) and automatically generates a basic Pester test suite structure, including `.feature` and `.tests.ps1` files for each API endpoint.
@@ -61,7 +52,7 @@ Here's a summary of the projects included in this repository. **For detailed set
 
 ---
 
-### 5. Jira Action Board GUI (JiraWorkflowUI)
+### 4. Jira Action Board GUI (JiraWorkflowUI)
 
 *   **Directory:** [`./JiraWorkflowUI/`](./JiraWorkflowUI/)
 *   **Description:** A PowerShell GUI application (using Windows Forms) that connects to a Jira instance via its REST API to display relevant issues in a customizable, actionable board format.
