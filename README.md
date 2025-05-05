@@ -1,79 +1,81 @@
-# AI Project Viability Assessment
-
-This repository explores the practical viability of applying Artificial Intelligence (or related automation techniques as a baseline for AI) to various tasks through hands-on projects and experiments.
+# Automation & AI Experiments Showcase
 
 ## 🎯 Goal
 
-The primary goal is to build, document, and assess the effectiveness, challenges, and feasibility of using AI and advanced automation for specific real-world use cases. Each project serves as a case study.
+This repository contains a collection of tools, utilities, and proof-of-concept projects designed to explore the practical application of automation and Artificial Intelligence (AI) techniques to various development and workflow tasks.
 
-## 📚 Overall Assessment Approach
+The primary goals are to:
 
-Viability is assessed by:
+1.  **Build Prototypes:** Create functional examples demonstrating specific capabilities.
+2.  **Assess Viability:** Evaluate the effectiveness, challenges, and feasibility of each approach.
+3.  **Explore Techniques:** Experiment with different technologies, including PowerShell scripting, API interactions, GUI development, and both local and cloud-based AI models.
+4.  **Promote Safe AI Use:** Understand the implications of different approaches, particularly the distinction between local processing (safe for internal data) and external API calls (requires careful consideration of data sensitivity).
 
-1.  **Developing Prototypes:** Building functional scripts or applications.
-2.  **Identifying Challenges:** Documenting hurdles related to data, APIs, algorithms, setup, and integration.
-3.  **Measuring Effectiveness:** Evaluating how well the solution meets the initial requirements (e.g., automation level, accuracy, usability).
-4.  **Exploring AI Potential:** Considering where current limitations could potentially be overcome by more sophisticated AI techniques (e.g., using LLMs for generation, ML for prediction/classification).
-
-## 🚀 Projects
-
-This section lists the assessment projects currently included in this repository. For detailed setup and usage instructions, please refer to the `README.md` file within each project's directory.
-
-### 1. Generate Pester Suite from OpenAPI Schema
-
-*   **Directory:** [`Generate-PesterSuite/`](./Generate-PesterSuite/)
-*   **Status:** Proof of Concept
-*   **Technology Stack:** PowerShell, OpenAPI (v2/v3), Pester
-*   **Description:** This project assesses the viability of **automating API test scaffolding**. It provides a PowerShell script (`Generate-PesterFromOpenAPI.ps1`) that generates a basic Pester test suite structure from an OpenAPI specification.
-*   **Viability Assessment Focus:**
-    *   Feasibility of parsing complex OpenAPI schemas.
-    *   Level of effort saved vs. manual test creation.
-    *   Limitations of template-based generation (requires significant manual enhancement for auth, parameters, complex assertions).
-    *   Potential for future AI enhancement (e.g., using an LLM to suggest more intelligent tests or parameter values based on schema descriptions).
-
-### 2. Jira Workflow UI
-
-*   **Directory:** [`JiraWorkflowUI/`](./JiraWorkflowUI/)
-*   **Status:** In Development
-*   **Technology Stack:** PowerShell, PowerShell Forms (GUI), Jira REST API, JSON
-*   **Description:** This project explores the creation of a custom, actionable **workflow interface interacting with an external API (Jira)**. It features a PowerShell GUI application (`JiraActionBoard.ps1`) displaying Jira tickets fetched via the API, organized into actionable columns.
-*   **Viability Assessment Focus:**
-    *   Feasibility of building functional GUI applications using PowerShell.
-    *   Challenges of interacting with complex APIs (Jira) and handling authentication.
-    *   Usability of custom UIs compared to standard web interfaces.
-    *   Potential for future AI integration (e.g., AI-powered ticket prioritization, suggesting next actions, summarizing comments).
-
-### 3. CSV <=> Gherkin Data Table Converter
-
-*   **Directory:** [`Convert-CsvGherkin/`](./Convert-CsvGherkin/)
-*   **Status:** Utility / Tool
-*   **Technology Stack:** PowerShell, Pester (for tests)
-*   **Description:** This project provides a PowerShell script (`Convert-CsvGherkin.ps1`) to convert data between CSV format and Gherkin data table format (and vice-versa). It can process files or pasted Gherkin input, useful for managing test data or generating documentation snippets.
-*   **Viability Assessment Focus:**
-    *   Assess the utility of PowerShell for text parsing and data format transformation tasks, common in test automation and data preparation.
-    *   Explore robust handling of file I/O, user input (pasting), and parameter-driven script logic.
-    *   Provides a baseline tool against which potential AI-driven data generation or transformation for testing could be compared.
-
-### 4. Gemma Training - Gherkin Generation from CSV
-
-*   **Directory:** [`Gemma-Training/`](./Gemma-Training/)
-*   **Status:** Experiment / Proof of Concept
-*   **Technology Stack:** PowerShell, Ollama, LLMs (e.g., Gemma, Llama 3), CSV
-*   **Description:** This project assesses the use of locally-run Large Language Models (LLMs) via Ollama to **generate Gherkin test scenarios from structured data**. It provides a script (`Generate-GherkinFromCsv.ps1`) that feeds test case descriptions and steps from a CSV to an LLM, prompting it to create corresponding Gherkin `Scenario:` blocks.
-*   **Viability Assessment Focus:**
-    *   Effectiveness of LLMs (like Gemma 3) for structured code/text generation based on prompts (in-context learning).
-    *   Impact of prompt engineering on the quality and consistency of generated Gherkin.
-    *   Feasibility of using local LLMs (via Ollama) for development workflow automation.
-    *   Comparison of this approach to traditional templating or manual creation.
-    *   Understanding the limitations of prompt-based generation vs. fine-tuning for specific formats.
+Each project serves as a case study, documented within its respective directory.
 
 ---
 
-## 🛠️ Prerequisites
+## 🚀 Projects Overview
 
-*   Git (for cloning the repository)
-*   PowerShell (specific version requirements may be listed in individual project READMEs)
-*   Any other dependencies specific to individual projects (see project READMEs).
+Here's a summary of the projects included in this repository. **For detailed setup, usage, and specific requirements, please refer to the `README.md` file within each project's directory.**
+
+---
+
+### 1. Convert-CsvGherkin
+
+*   **Directory:** [`./Convert-CsvGherkin/`](./Convert-CsvGherkin/)
+*   **Description:** A PowerShell utility script for converting data between standard CSV format and Gherkin data table format (used in Cucumber/SpecFlow `.feature` files), and vice-versa. Operates entirely locally.
+*   **Technology Stack:** PowerShell
+*   **Purpose:** Facilitates test data management and manipulation for BDD workflows through local automation.
+*   **Status:** Utility / Tool
+
+---
+
+### 2. Gemini Assistant - Godot Editor Plugin
+
+*   **Directory:** [`./Gemini-Assistant-Godot/`](./Gemini-Assistant-Godot/) *(Assuming a directory name, adjust if different)*
+*   **Description:** A plugin for the Godot game engine editor that integrates Google's Gemini AI models. Allows sending prompts and project context (code, scene info) to the external Gemini API for assistance with coding, debugging, etc.
+*   **Technology Stack:** Godot (GDScript), Google Gemini API
+*   **Purpose:** Demonstrates direct integration of a cloud-based AI assistant into a development environment. **Note:** Requires an API key and sends data externally.
+*   **Status:** Plugin / Tool
+
+---
+
+### 3. Gemma Training - Gherkin Generation from CSV
+
+*   **Directory:** [`./Gemma-Training/`](./Gemma-Training/)
+*   **Description:** A PowerShell script that uses **locally running** Large Language Models (LLMs like Gemma, Llama 3) via the Ollama framework to generate Gherkin test scenarios (`.feature` file content) from structured data in a CSV file.
+*   **Technology Stack:** PowerShell, Ollama, LLMs, CSV
+*   **Purpose:** Explores the use of *local* AI (in-context learning) for code/text generation tasks, keeping sensitive data internal. Automates Gherkin creation from test case descriptions.
+*   **Status:** Experiment / Proof of Concept
+
+---
+
+### 4. OpenAPI to Pester Test Suite Generator
+
+*   **Directory:** [`./Generate-PesterSuite/`](./Generate-PesterSuite/) *(Assuming a directory name, adjust if different)*
+*   **Description:** A PowerShell script that parses an OpenAPI (v2/v3) specification file (JSON) and automatically generates a basic Pester test suite structure, including `.feature` and `.tests.ps1` files for each API endpoint.
+*   **Technology Stack:** PowerShell, OpenAPI (JSON), Pester
+*   **Purpose:** Assesses the viability of automating API test scaffolding using rule-based generation from API specifications. Provides a non-AI automation baseline.
+*   **Status:** Proof of Concept / Tool
+
+---
+
+### 5. Jira Action Board GUI (JiraWorkflowUI)
+
+*   **Directory:** [`./JiraWorkflowUI/`](./JiraWorkflowUI/)
+*   **Description:** A PowerShell GUI application (using Windows Forms) that connects to a Jira instance via its REST API to display relevant issues in a customizable, actionable board format.
+*   **Technology Stack:** PowerShell (Windows Forms), Jira REST API, JSON
+*   **Purpose:** Explores building custom graphical interfaces for interacting with external (non-AI) APIs like Jira to improve specific workflows. Demonstrates handling API keys and data retrieval locally.
+*   **Status:** In Development / Tool
+
+---
+
+## 🛠️ General Prerequisites
+
+*   **Git:** For cloning the repository.
+*   **PowerShell:** Most scripts require PowerShell 5.1 or later. Specific version requirements may be listed in individual project READMEs.
+*   **Other Dependencies:** Individual projects may have unique requirements (e.g., Ollama, Pester module, .NET Framework, API keys) detailed in their respective README files.
 
 ## ⚙️ Getting Started
 
@@ -84,17 +86,18 @@ This section lists the assessment projects currently included in this repository
     ```
 2.  **Navigate to a project directory:**
     ```bash
-    cd Generate-PesterSuite
-    # or
-    cd JiraWorkflowUI
-    # or
     cd Convert-CsvGherkin
     # or
+    cd Gemini-Assistant-Godot # Adjust name if needed
+    # or
     cd Gemma-Training
+    # or
+    cd Generate-PesterSuite   # Adjust name if needed
+    # or
+    cd JiraWorkflowUI
     ```
-3.  **Follow the instructions** in the `README.md` file within that project's directory for specific setup and execution steps.
-
+3.  **Follow the specific instructions** in the `README.md` file within that project's directory for detailed setup, configuration, and usage.
 
 ---
 
-*This README will be updated as more projects are added or existing ones evolve.*
+*This README provides a high-level overview. Please consult the documentation within each project folder for specifics.*
