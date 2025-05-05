@@ -1,0 +1,18 @@
+Description,Steps
+Verify successful user login,"1. Send POST request to /login with valid username and password.
+2. Expect HTTP status code 200 OK.
+3. Expect response body to contain a valid authentication token."
+Verify login failure with invalid password,"1. Send POST request to /login with valid username and incorrect password.
+2. Expect HTTP status code 401 Unauthorized.
+3. Expect response body to contain an ""Invalid credentials"" error message."
+Retrieve user profile,"1. Ensure user is logged in (obtain auth token).
+2. Send GET request to /users/me endpoint with the authentication token in the header.
+3. Expect HTTP status code 200 OK.
+4. Expect response body containing the user's profile data (ID, username, email)."
+Update user email address,"1. User is logged in.
+2. Send PUT request to /users/me with a JSON body containing the new email address. Use auth token.
+3. Expect HTTP status code 200 OK.
+4. Optionally, verify the email update by retrieving the profile again."
+Attempt to access protected resource without auth,"1. Send GET request to /users/me (or other protected endpoint).
+2. Do not include any authentication token.
+3. Expect HTTP status code 401 Unauthorized or 403 Forbidden."

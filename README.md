@@ -54,6 +54,19 @@ This section lists the assessment projects currently included in this repository
     *   Explore robust handling of file I/O, user input (pasting), and parameter-driven script logic.
     *   Provides a baseline tool against which potential AI-driven data generation or transformation for testing could be compared.
 
+### 4. Gemma Training - Gherkin Generation from CSV
+
+*   **Directory:** [`Gemma-Training/`](./Gemma-Training/)
+*   **Status:** Experiment / Proof of Concept
+*   **Technology Stack:** PowerShell, Ollama, LLMs (e.g., Gemma, Llama 3), CSV
+*   **Description:** This project assesses the use of locally-run Large Language Models (LLMs) via Ollama to **generate Gherkin test scenarios from structured data**. It provides a script (`Generate-GherkinFromCsv.ps1`) that feeds test case descriptions and steps from a CSV to an LLM, prompting it to create corresponding Gherkin `Scenario:` blocks.
+*   **Viability Assessment Focus:**
+    *   Effectiveness of LLMs (like Gemma 3) for structured code/text generation based on prompts (in-context learning).
+    *   Impact of prompt engineering on the quality and consistency of generated Gherkin.
+    *   Feasibility of using local LLMs (via Ollama) for development workflow automation.
+    *   Comparison of this approach to traditional templating or manual creation.
+    *   Understanding the limitations of prompt-based generation vs. fine-tuning for specific formats.
+
 ---
 
 ## 🛠️ Prerequisites
@@ -74,6 +87,10 @@ This section lists the assessment projects currently included in this repository
     cd Generate-PesterSuite
     # or
     cd JiraWorkflowUI
+    # or
+    cd Convert-CsvGherkin
+    # or
+    cd Gemma-Training
     ```
 3.  **Follow the instructions** in the `README.md` file within that project's directory for specific setup and execution steps.
 
