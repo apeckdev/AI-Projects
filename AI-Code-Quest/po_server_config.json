@@ -1,0 +1,82 @@
+{
+  "server_name": "Product Owner Server",
+  "port": 9999,
+  "roles": {
+    "DEV": {
+      "tasks": {
+        "1": "Write a Python function `calculate_karma(posts, comments, shares)` that returns a score. Weights: posts=5, comments=2, shares=10.",
+        "2": "Refactor the karma logic into a `ReputationManager` class with an `update_karma(self, posts, comments, shares)` method.",
+        "3": "In `update_karma`, raise a `ValueError` if any inputs are negative.",
+        "4": "Add a method `apply_decay(self, days_since_last_post)` that reduces karma by 1.5% per day (never below zero).",
+        "5": "Refactor the save logic into an `async def save_to_disk(self)` method using `asyncio` and `aiofiles`.",
+        "6": "Write a conventional Git commit message for the features added to `ReputationManager`.",
+        "7": "Write a basic `unittest` test case to verify `update_karma` calculates correctly.",
+        "8": "Add unit tests for the `ValueError` on negative inputs and for the `apply_decay` method.",
+        "9": "Add `IOError` handling to `save_to_disk` and implement an `async def load_from_disk(cls, username)` class method.",
+        "10": "Create a simple CLI using `argparse` to interact with the `ReputationManager`."
+      },
+      "initial_code": {
+        "1": "# Task: Create a function to calculate user karma.",
+        "2": "class ReputationManager:\n    def __init__(self, username):\n        self.username = username\n        self.karma = 0\n\n    # Task: Move the karma calculation logic into an `update_karma` method here.",
+        "3": "class ReputationManager:\n    def __init__(self, username):\n        self.username = username\n        self.karma = 0\n\n    def update_karma(self, posts, comments, shares):\n        # Task: Add validation here to ensure inputs are not negative.\n        self.karma += (posts * 5) + (comments * 2) + (shares * 10)\n        return self.karma",
+        "4": "import math\n\nclass ReputationManager:\n    def __init__(self, username, initial_karma=100):\n        self.username = username\n        self.karma = initial_karma\n\n    # Task: Implement a karma decay method here.",
+        "5": "import asyncio\nimport aiofiles\n\nclass ReputationManager:\n    def __init__(self, username, karma=100):\n        self.username = username\n        self.karma = karma\n\n    # Task: Create an async method `save_to_disk` that writes the user's karma to a file named '{username}.json'.",
+        "6": "# No code for this task. Review your previous work on the ReputationManager class to write your commit message.",
+        "7": "import unittest\nfrom your_module import ReputationManager # Assuming the class is in your_module.py\n\nclass TestReputationManager(unittest.TestCase):\n    # Task: Write a test method here to check the basic karma calculation.",
+        "8": "import unittest\nfrom your_module import ReputationManager\n\nclass TestReputationManager(unittest.TestCase):\n    def test_update_karma(self):\n        rep_manager = ReputationManager('test_user')\n        rep_manager.update_karma(1, 1, 1)\n        self.assertEqual(rep_manager.karma, 17)\n\n    # Task: Add new test methods here for ValueError and the decay logic.",
+        "9": "import asyncio\nimport aiofiles\nimport json\n\nclass ReputationManager:\n    # ... (existing methods) ...\n    async def save_to_disk(self):\n        # Task: Add try...except for IOError here.\n        async with aiofiles.open(f'{self.username}.json', 'w') as f:\n            await f.write(json.dumps({'karma': self.karma}))\n\n    # Task: Implement the async load_from_disk class method here.",
+        "10": "import argparse\nfrom your_module import ReputationManager\n\n# Task: Create a CLI using argparse to interact with the ReputationManager."
+      },
+      "validation_criteria": {
+        "1": "Does the submission contain a Python function `calculate_karma` that correctly multiplies posts by 5, comments by 2, and shares by 10?",
+        "2": "Is there a Python class `ReputationManager` with an `__init__` method and an `update_karma` method containing the calculation?",
+        "3": "Does the `update_karma` method raise a `ValueError` if any input is less than 0?",
+        "4": "Is there a method `apply_decay` that reduces karma by 1.5% and ensures it doesn't go below zero?",
+        "5": "Is there an `async def save_to_disk(self)` method that uses `aiofiles.open`?",
+        "6": "Does the submission provide a conventional commit message starting with `feat:` or `refactor:`?",
+        "7": "Is there a `unittest.TestCase` class with a test method that asserts the result of `update_karma`?",
+        "8": "Does the submission include a test using `assertRaises(ValueError)` and another test verifying the decay calculation?",
+        "9": "Is the `save_to_disk` method wrapped in a try/except block for `IOError`? Is there an `async def load_from_disk` class method?",
+        "10": "Does the script use `argparse` to create a CLI with sub-commands for updating karma and applying decay?"
+      }
+    },
+    "QA": {
+      "tasks": {
+        "1": "Review the `process_order` function and describe the bug that prevents correct order processing.",
+        "2": "Write a Gherkin feature file for a shipping cost calculator (Free > $50, $5.99 for $10-$49.99, $8.99 < $10).",
+        "3": "The `calculate_shipping` function has a boundary bug. Write a PyTest unit test that fails for an order of exactly $50.00.",
+        "4": "The `validate_coupon_code` function has a date-related flaw. Describe the edge case where a valid coupon is rejected.",
+        "5": "Write a high-level test plan for a new 'loyalty points' feature.",
+        "6": "Using the bug from level 3, write a formal bug report (Title, Severity, Steps, Expected, Actual).",
+        "7": "Manually test the `GET /users/{username}/reputation` API endpoint using `curl` and describe the expected JSON response.",
+        "8": "Automate the API test from the previous level using Python's `requests` library.",
+        "9": "Describe a simple load testing plan for the reputation API (Tool, Metrics, Goal).",
+        "10": "Write a comprehensive E2E test scenario in Gherkin for a user journey involving registration, karma, decay, and a leaderboard."
+      },
+      "initial_code": {
+        "1": "def process_order(item_count, inventory_count):\n    # There is a bug on the next line\n    if item_count > inventory_count:\n        return 'Error: Out of stock.'\n    \n    inventory_count -= item_count\n    return f'Success. {inventory_count} items remain.'",
+        "2": "# No code for this task. Write a BDD feature file based on the requirements.",
+        "3": "def calculate_shipping(order_total):\n    if order_total > 50.00:\n        return 0.00 # Free shipping\n    elif order_total >= 10.00:\n        return 5.99\n    else:\n        return 8.99\n\n# Task: Write a pytest function that exposes the bug here.",
+        "4": "from datetime import datetime, date\n\ndef validate_coupon_code(coupon_code, expiration_date_str):\n    # expiration_date_str is in 'YYYY-MM-DD' format\n    expiration_date = datetime.strptime(expiration_date_str, '%Y-%m-%d').date()\n    \n    # The bug is in the comparison below\n    if coupon_code == 'SAVE20' and date.today() < expiration_date:\n        return True\n    return False",
+        "5": "# No code for this task. Base your test plan on the following feature: Users earn 1 loyalty point for every $10 spent. Points can be redeemed for a $5 discount at 100 points.",
+        "6": "# No code for this task. Write a formal bug report for the `calculate_shipping` function bug.",
+        "7": "# Task: Use curl to test `GET /users/testuser/reputation` and describe the expected JSON response.",
+        "8": "import requests\n\n# Task: Write a Python script to test the API endpoint and assert the response.",
+        "9": "# No code for this task. Describe a load testing plan for the API.",
+        "10": "# No code for this task. Write a full Gherkin feature file for the E2E user journey."
+      },
+      "validation_criteria": {
+        "1": "Does the user identify that the condition `item_count > inventory_count` is flawed because it allows an order of equal quantity, resulting in zero stock?",
+        "2": "Does the submission contain a valid Gherkin feature file with a Scenario outlining shipping cost rules using Given, When, and Then?",
+        "3": "Is there a pytest function that asserts a failing condition for `calculate_shipping(50.00)` (e.g., `assert calculate_shipping(50.00) == 0.00`)?",
+        "4": "Does the user explain that `date.today() < expiration_date` incorrectly excludes the expiration day itself?",
+        "5": "Does the test plan mention at least three distinct testing types (e.g., Unit, Integration, UI, Regression)?",
+        "6": "Does the bug report include a Title, Steps to Reproduce, Expected Result, and Actual Result?",
+        "7": "Does the user describe a JSON response like `{'username': 'testuser', 'karma': 100}` and show the `curl` command used?",
+        "8": "Does the Python script use the `requests` library to make a GET request, check for a 200 status, and verify the response contains a 'karma' key?",
+        "9": "Does the plan name a load testing tool, list key metrics (e.g., response time, error rate), and state a clear goal?",
+        "10": "Is there a Gherkin feature file with a detailed E2E scenario covering registration, karma changes, and a leaderboard?"
+      }
+    }
+  }
+}
