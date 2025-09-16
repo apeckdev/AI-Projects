@@ -42,13 +42,17 @@ const gameLevels = [
 
     \`POST /api/users?action=create&name=JohnDoe&email=john@example.com\`
 
-Write a prompt for an AI that refactors this into a proper RESTful endpoint. The prompt should ask for the correct HTTP verb, URL structure, and request body format. The AI should also explain *why* the changes make it RESTful.`
+Write a prompt for AI that refactors this into a proper RESTful endpoint. and creates a variety of different tests for the endpoint.
+
+Consider being creative with the tools used for testing (e.g., Postman, curl, unit tests).`
     },
     {
         level: 2,
         problem: `A frantic message comes from the support team: 'Our top enterprise client, MegaCorp, is completely blocked! They're getting a '500 Internal Server Error' on their main invoice processing page and threatening to cancel. We need a hotfix immediately!'
         
-Write a prompt for an AI to act as a team lead and create a comprehensive action plan. The AI's output must include: a high-priority Jira bug ticket, a brief stakeholder communication message for Slack, and a list of the first three technical investigation steps.`
+Write a prompt for AI to act as a team lead and create a comprehensive action plan.
+
+Consider all team responsibilities.`
     },
     {
         level: 3,
@@ -56,19 +60,25 @@ Write a prompt for an AI to act as a team lead and create a comprehensive action
 
     \`public decimal CalculateProratedSubscription(DateTime startDate, DateTime endDate, decimal monthlyRate)\`
 
-It has edge cases like leap years and subscriptions starting/ending mid-month. Write a prompt for an AI to generate a comprehensive suite of xUnit tests for this function, ensuring it covers at least five critical edge cases.`
+Write a prompt for an AI to generate a comprehensive suite of xUnit tests for this function, ensuring it covers as many edge cases as possible.
+
+Consider edge cases like leap years, month-end dates, and invalid date ranges.`
     },
     {
         level: 4,
         problem: `Management has submitted a vague feature request: 'We need to improve the user dashboard. It should be faster and show more relevant data.'
 
-Write a prompt for an AI to act as a product owner and break this request down into a structured set of Jira tickets. The output should include one Epic, at least three User Stories with clear acceptance criteria, and potential sub-tasks for one of the stories.`
+Write a prompt for an AI to act as a product owner and break this request down into a structured set of Jira tickets.
+
+Consider coming up with an Epic that would resolve the feature request and having AI create the tickets for it.`
     },
     {
         level: 5,
-        problem: `An external API your team relies on is experiencing intermittent \`503 Service Unavailable\` errors.
+        problem: `A new user login page needs to be created. It should handle all the normal things a user login page handles.
 
-Write a prompt for an AI to generate a C# code snippet that implements a robust Polly retry policy. The policy should use an exponential backoff strategy and log a warning on each retry attempt.`
+Write a prompt for AI to prototype the login page. 
+
+Consider including notes about styling and security features.`
     }
 ];
 
