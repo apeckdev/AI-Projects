@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GM View - AI Prompt Jam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="gm-lobby" class="screen active">
+        <h1>Game Master Console</h1>
+        <h2 id="gm-status"></h2>
+        <h3>Players in Lobby:</h3>
+        <ul id="player-list"></ul>
+        <button id="start-game-button">Start Game</button>
+    </div>
+    <div id="gm-game-view" class="screen">
+        <h2>Level <span id="level-number"></span></h2>
+        <p id="problem-text"></p>
+        <h3>Submissions:</h3>
+        <ul id="submission-list"></ul>
+        <button id="close-submissions-button">Close Submissions & Evaluate</button>
+    </div>
+
+    <div id="results-screen" class="screen">
+        <h2>Round Results</h2>
+        <div class="problem-recap">
+            <h4>The Problem Was:</h4>
+            <p id="results-problem-text"></p>
+        </div>
+        <div class="winner-announcement">
+            <h3>Round Winner: <span id="winner-name"></span></h3>
+        </div>
+        <h4>AI Generated Solution:</h4>
+        <pre class="solution-display" id="ai-solution"></pre>
+        <hr>
+        <h4>This Round's Rankings:</h4>
+        <ul id="round-rankings"></ul>
+        <button id="show-leaderboard-button">Show Leaderboard</button>
+    </div>
+
+    <div id="leaderboard-screen" class="screen">
+        <h2>Overall Leaderboard</h2>
+        <ul id="overall-leaderboard"></ul>
+        <button id="next-level-button" style="display: none;">Start Next Level</button>
+        <button id="final-results-button" style="display: none;">Show Final Results</button>
+    </div>
+    <div id="game-over-screen" class="screen">
+        <h1>Game Over!</h1>
+        <h2>Final Standings:</h2>
+        <div id="winner-podium"></div>
+        <p>Thanks for playing!</p>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="gm.js"></script>
+</body>
+</html>
