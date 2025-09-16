@@ -12,6 +12,7 @@ function showScreen(screenId) {
 const gmStatus = document.getElementById('gm-status');
 const playerList = document.getElementById('player-list');
 const startGameButton = document.getElementById('start-game-button');
+const startFirstRoundButton = document.getElementById('start-first-round-button');
 const levelNumber = document.getElementById('level-number');
 const problemText = document.getElementById('problem-text');
 const submissionList = document.getElementById('submission-list');
@@ -32,6 +33,7 @@ socket.on('connect', () => { socket.emit('createGame'); });
 
 // --- Event Listeners ---
 startGameButton.addEventListener('click', () => { socket.emit('startGame'); });
+startFirstRoundButton.addEventListener('click', () => { socket.emit('startFirstRound'); });
 closeSubmissionsButton.addEventListener('click', () => {
     if (confirm('Are you sure you want to close submissions and evaluate the prompts?')) {
         socket.emit('closeSubmissions');
@@ -55,6 +57,10 @@ socket.on('updatePlayerList', (players) => {
         }
         playerList.appendChild(li);
     });
+});
+
+socket.on('showInstructions', () => {
+    showScreen('gm-instructions-wait-screen');
 });
 
 socket.on('levelStart', (levelData) => {

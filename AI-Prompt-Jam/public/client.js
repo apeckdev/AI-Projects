@@ -75,6 +75,10 @@ socket.on('updatePlayerList', (players) => {
     });
 });
 
+socket.on('showInstructions', () => {
+    showScreen('instructions-screen');
+});
+
 socket.on('levelStart', (levelData) => {
     showScreen('game-screen');
     promptInput.disabled = false;

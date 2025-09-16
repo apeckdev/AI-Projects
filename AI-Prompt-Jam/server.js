@@ -22,7 +22,7 @@ app.use(express.static('public'));
 // --- Gemini API Setup ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-pro-latest",
+    model: "gemini-2.5-pro",
     safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
@@ -181,6 +181,9 @@ io.on('connection', (socket) => {
                 case 'LOBBY':
                     socket.emit('joinSuccess', { message: `Welcome back, ${player.name}!`, playerId: player.id });
                     break;
+                case 'INSTRUCTIONS':
+                    socket.emit('showInstructions');
+                    break;
                 case 'PROMPTING':
                     const currentProblem = gameLevels[gameState.currentLevel - 1];
                     socket.emit('levelStart', currentProblem);
@@ -212,8 +215,16 @@ io.on('connection', (socket) => {
     socket.on('startGame', () => {
         if (socket.id !== gameState.gameMasterSocketId) return;
         
-        console.log('Game Master is starting the game.');
+        console.log('Game Master is starting the game. Showing instructions.');
         gameState.gameStarted = true;
+        gameState.phase = 'INSTRUCTIONS';
+        io.emit('showInstructions');
+    });
+
+    socket.on('startFirstRound', () => {
+        if (socket.id !== gameState.gameMasterSocketId) return;
+        
+        console.log('Starting first round...');
         gameState.currentLevel = 1;
         gameState.prompts = {}; 
         gameState.phase = 'PROMPTING';
