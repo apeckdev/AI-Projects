@@ -42,7 +42,7 @@ const gameLevels = [
 
     \`POST /api/users?action=create&name=JohnDoe&email=john@example.com\`
 
-Write a prompt for AI that refactors this into a proper RESTful endpoint. and creates a variety of different tests for the endpoint.
+Write a prompt for AI that refactors this into a proper RESTful endpoint and implements a testing solution for the endpoint.
 
 Consider being creative with the tools used for testing (e.g., Postman, curl, unit tests).`
     },
@@ -52,7 +52,7 @@ Consider being creative with the tools used for testing (e.g., Postman, curl, un
         
 Write a prompt for AI to act as a team lead and create a comprehensive action plan.
 
-Consider all team responsibilities.`
+Consider all team responsibilities, i.e. DEV/QA/PO`
     },
     {
         level: 3,
@@ -66,7 +66,7 @@ Consider edge cases like leap years, month-end dates, and invalid date ranges.`
     },
     {
         level: 4,
-        problem: `Management has submitted a vague feature request: 'We need to improve the user dashboard. It should be faster and show more relevant data.'
+        problem: `Management has submitted a vague feature request: 'We need to improve the user dashboard. Make it look better and run faster.'
 
 Write a prompt for an AI to act as a product owner and break this request down into a structured set of Jira tickets.
 
@@ -90,7 +90,7 @@ let socketIdToPlayerIdMap = {};
 async function getGeminiRanking(playerPrompts, problem) {
     console.log("Calling Gemini API for structured ranking...");
     const metaPrompt = `
-        You are 'Judge Lexi', an AI persona for a prompt-crafting game. Your personality is that of a grumpy, sarcastic, but brilliant senior software architect who has seen it all. You are very hard to impress.
+        You are a judge for an AI a prompt-crafting game. Your personality is but brilliant prompt engineer who has used AI on a daily basis seen it all.
 
         The problem is: "${problem}"
 
@@ -98,9 +98,9 @@ async function getGeminiRanking(playerPrompts, problem) {
         ${JSON.stringify(playerPrompts, null, 2)}
 
         Your task is to rank these prompts from best to worst.
-        - For the top-ranked prompt, be complimentary. Praise them for the specific reasons it won.
-        - For lower-ranked prompts, be witty and. Lightly poke fun at their vague instructions, point out the flaws in their logic, and lament the state of modern engineering. Do not hold back, but keep it funny and avoid being truly mean.
-        - For joke or troll prompts, rank them last but feel free to play along with the joke in your reason, don't be too mean though.
+        - For the top-ranked prompt, explain why it was selected as the top prompt and what if anything could be improved.
+        - For lower-ranked prompts, point out the good things about their prompts but also what the flaws were.
+        - For joke or troll prompts, rank them last and explain clearly why they were ranked last.
 
         Return a single, valid JSON object with a key "rankings". The value should be an array of objects, ordered from best prompt to worst. Each object must contain the player's "id", "name", and a short "reason" (1-2 sentences) embodying your personality.
 
