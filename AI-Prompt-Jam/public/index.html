@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Prompt Jam</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="join-screen" class="screen active">
+        <h1>Join the Game</h1>
+        <input type="text" id="name-input" placeholder="Enter your name" />
+        <button id="join-button">Join</button>
+    </div>
+
+    <div id="lobby-screen" class="screen">
+        <h2 id="welcome-message"></h2>
+        <h3>Players in Lobby:</h3>
+        <ul id="player-list"></ul>
+        <p>Waiting for the Game Master to start the game...</p>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <h2>Level <span id="level-number"></span></h2>
+        <p id="problem-text"></p>
+        <textarea id="prompt-input" rows="5" placeholder="Enter your AI prompt here..."></textarea>
+        <button id="submit-prompt-button">Submit Prompt</button>
+    </div>
+
+    <div id="waiting-screen" class="screen">
+        <h2>Prompt Submitted!</h2>
+        <p>Waiting for the other players and the Game Master to continue...</p>
+    </div>
+
+    <div id="results-screen" class="screen">
+        <h2>Round Results</h2>
+        <div class="problem-recap">
+            <h4>The Problem Was:</h4>
+            <p id="results-problem-text"></p>
+        </div>
+        <div class="winner-announcement">
+            <h3>Round Winner: <span id="winner-name"></span></h3>
+        </div>
+        <h4>AI Generated Solution:</h4>
+        <pre class="solution-display" id="ai-solution"></pre>
+        <hr>
+        <h4>This Round's Rankings:</h4>
+        <ul id="round-rankings"></ul>
+        <p><i>Waiting for the Game Master to continue...</i></p>
+    </div>
+
+    <div id="leaderboard-screen" class="screen">
+        <h2>Overall Leaderboard</h2>
+        <ul id="overall-leaderboard"></ul>
+        <p>Waiting for the Game Master to start the next level...</p>
+    </div>
+
+    <div id="game-over-screen" class="screen">
+        <h1>Game Over!</h1>
+        <h2>Final Standings:</h2>
+        <div id="winner-podium">
+            </div>
+        <p>Thanks for playing!</p>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
