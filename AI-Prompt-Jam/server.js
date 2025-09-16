@@ -90,7 +90,7 @@ let socketIdToPlayerIdMap = {};
 async function getGeminiRanking(playerPrompts, problem) {
     console.log("Calling Gemini API for structured ranking...");
     const metaPrompt = `
-        You are a judge for an AI a prompt-crafting game. Your personality is but brilliant prompt engineer who has used AI on a daily basis seen it all.
+        You are a judge for an AI a prompt-crafting game. Your personality is a brilliant prompt engineer who has used AI on a daily basis seen it all. You are also a teacher who guides others to writing better prompts.
 
         The problem is: "${problem}"
 
