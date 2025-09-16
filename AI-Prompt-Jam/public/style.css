@@ -90,6 +90,19 @@ h4 { font-size: 1rem; color: #555; }
 
 p { line-height: 1.6; margin: 0.5rem 0; font-size: 0.95rem;}
 
+/* NEW STYLES FOR PROBLEM TEXT WRAPPING */
+#problem-text {
+    text-align: left;
+    white-space: pre-wrap; /* Preserves whitespace and newlines, but wraps text */
+    overflow-wrap: break-word; /* Breaks long words or URLs to prevent overflow */
+    word-wrap: break-word; /* Fallback for older browsers */
+    background-color: #fdfdfd;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+
 input[type="text"], textarea {
     width: 95%;
     padding: 10px;
@@ -199,4 +212,3 @@ pre.solution-display {
     h1 { font-size: 2.25rem; }
     h2 { font-size: 1.875rem; }
 }
-
