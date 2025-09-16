@@ -22,7 +22,7 @@ app.use(express.static('public'));
 // --- Gemini API Setup ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-pro",
+    model: "gemini-2.5-pro-latest",
     safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
@@ -34,27 +34,41 @@ const model = genAI.getGenerativeModel({
 const solutionModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
 
-// --- Hardcoded Game Content ---
+// --- Hardcoded Game Content (Reformatted for Readability) ---
 const gameLevels = [
     {
         level: 1,
-        problem: "A junior developer has created a non-RESTful API endpoint: `POST /api/users?action=create&name=JohnDoe&email=john@example.com`. Write a prompt for an AI that refactors this into a proper RESTful endpoint, including the correct HTTP verb, URL structure, and request body format. The AI should also explain *why* the changes make it RESTful."
+        problem: `A junior developer has created a non-RESTful API endpoint:
+
+    \`POST /api/users?action=create&name=JohnDoe&email=john@example.com\`
+
+Write a prompt for an AI that refactors this into a proper RESTful endpoint. The prompt should ask for the correct HTTP verb, URL structure, and request body format. The AI should also explain *why* the changes make it RESTful.`
     },
     {
         level: 2,
-        problem: "A frantic message comes from the support team: 'Our top enterprise client, MegaCorp, is completely blocked! They're getting a '500 Internal Server Error' on their main invoice processing page and threatening to cancel. We need a hotfix immediately!' Write a prompt for an AI to act as a team lead and create a comprehensive action plan. The AI's output must include: a high-priority Jira bug ticket, a brief stakeholder communication message for Slack, and a list of the first three technical investigation steps."
+        problem: `A frantic message comes from the support team: 'Our top enterprise client, MegaCorp, is completely blocked! They're getting a '500 Internal Server Error' on their main invoice processing page and threatening to cancel. We need a hotfix immediately!'
+        
+Write a prompt for an AI to act as a team lead and create a comprehensive action plan. The AI's output must include: a high-priority Jira bug ticket, a brief stakeholder communication message for Slack, and a list of the first three technical investigation steps.`
     },
     {
         level: 3,
-        problem: "You have a complex C# function: `public decimal CalculateProratedSubscription(DateTime startDate, DateTime endDate, decimal monthlyRate)`. It has edge cases like leap years and subscriptions starting/ending mid-month. Write a prompt for an AI to generate a comprehensive suite of xUnit tests for this function, ensuring it covers at least five critical edge cases."
+        problem: `You have a complex C# function:
+
+    \`public decimal CalculateProratedSubscription(DateTime startDate, DateTime endDate, decimal monthlyRate)\`
+
+It has edge cases like leap years and subscriptions starting/ending mid-month. Write a prompt for an AI to generate a comprehensive suite of xUnit tests for this function, ensuring it covers at least five critical edge cases.`
     },
     {
         level: 4,
-        problem: "Management has submitted a vague feature request: 'We need to improve the user dashboard. It should be faster and show more relevant data.' Write a prompt for an AI to act as a product owner and break this request down into a structured set of Jira tickets. The output should include one Epic, at least three User Stories with clear acceptance criteria, and potential sub-tasks for one of the stories."
+        problem: `Management has submitted a vague feature request: 'We need to improve the user dashboard. It should be faster and show more relevant data.'
+
+Write a prompt for an AI to act as a product owner and break this request down into a structured set of Jira tickets. The output should include one Epic, at least three User Stories with clear acceptance criteria, and potential sub-tasks for one of the stories.`
     },
     {
         level: 5,
-        problem: "An external API your team relies on is experiencing intermittent `503 Service Unavailable` errors. Write a prompt for an AI to generate a C# code snippet that implements a robust Polly retry policy. The policy should use an exponential backoff strategy and log a warning on each retry attempt."
+        problem: `An external API your team relies on is experiencing intermittent \`503 Service Unavailable\` errors.
+
+Write a prompt for an AI to generate a C# code snippet that implements a robust Polly retry policy. The policy should use an exponential backoff strategy and log a warning on each retry attempt.`
     }
 ];
 
