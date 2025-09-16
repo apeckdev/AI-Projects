@@ -1,26 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tahoma:wght@400;700&display=swap');
 
 :root {
-    --primary-color: #4A46E5; /* Indigo */
-    --primary-hover: #3730A3;
-    --background-color: #F8F9FA;
-    --card-background: #FFFFFF;
-    --text-color: #1F2937;
-    --subtle-text: #6B7280;
-    --border-color: #E5E7EB;
-    --success-color: #10B981; /* Emerald Green */
+    /* "PacStar" Dashboard Color Palette */
+    --background-color: #3d3d3d; /* Dark gray textured background */
+    --panel-background: #ececec; /* Light gray for main content */
+    --panel-text-color: #333; /* Dark text for light panels */
+    --header-footer-bg: linear-gradient(#4a4a4a, #2a2a2a);
+    --header-footer-border: #1a1a1a;
+    --text-color-light: #f5f5f5;
+    
+    --accent-green: #949d63;
+    --accent-green-dark: #7c8554;
+    --accent-gold: #d1b95b;
+    
+    --border-inset-light: #999;
+    --border-inset-dark: #e0e0e0;
+    
+    --table-header-bg: #d7d7d7;
+    --table-row-light: #f7f7f7;
+    --table-row-dark: #ebebeb;
 }
 
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Tahoma', sans-serif; /* Classic UI font */
     background-color: var(--background-color);
-    color: var(--text-color);
+    color: var(--text-color-light);
     margin: 0;
-    padding: 20px;
+    padding: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    box-sizing: border-box;
 }
 
 .screen {
@@ -28,165 +39,164 @@ body {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    background-color: var(--card-background);
-    padding: 2.5rem;
-    border-radius: 16px;
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    background: var(--header-footer-bg);
+    padding: 0; /* Removed padding to allow for full-bleed header/footer */
+    border-radius: 6px;
+    border: 1px solid var(--header-footer-border);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     width: 100%;
-    max-width: 700px;
-    border: 1px solid var(--border-color);
+    max-width: 800px; /* Increased max-width for dashboard layout */
+    min-height: 70vh;
+    justify-content: flex-start; /* Align content to the top */
 }
 
-/* Initially hide all screens, JS will show the correct one */
-.screen.active {
+/* Create a content wrapper inside the screen for the light panel effect */
+.screen-content {
+    background: var(--panel-background);
+    color: var(--panel-text-color);
+    width: 100%;
+    flex-grow: 1;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.screen.active, #join-screen, #gm-lobby {
     display: flex;
 }
 
-/* Show join screen by default if no JS is active or before it runs */
-#join-screen {
-    display: flex;
+/* Header style for screen titles */
+.screen-header {
+    width: 100%;
+    padding: 8px 15px;
+    box-sizing: border-box;
+    text-align: left;
+    font-weight: bold;
+    font-size: 1.2rem;
+    border-bottom: 1px solid var(--header-footer-border);
+    text-shadow: 1px 1px 1px #000;
 }
-#gm-lobby {
-    display: flex;
-}
-
 
 h1, h2, h3, h4 {
-    margin-top: 0;
-    margin-bottom: 0.75rem;
+    margin: 0 0 1rem 0;
     font-weight: 700;
+    word-wrap: break-word;
 }
-h1 { font-size: 2.25rem; }
-h2 { font-size: 1.875rem; color: var(--primary-color); }
-h3 { font-size: 1.5rem; }
-h4 { font-size: 1.125rem; color: var(--subtle-text); margin-top: 1rem;}
 
-p { line-height: 1.6; margin: 0.5rem 0; }
+h1 { font-size: 1.75rem; color: var(--accent-gold); }
+h2 { font-size: 1.5rem; color: #444; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1rem; color: #555; }
+
+p { line-height: 1.6; margin: 0.5rem 0; font-size: 0.95rem;}
 
 input[type="text"], textarea {
-    width: 90%;
-    padding: 14px;
+    width: 95%;
+    padding: 10px;
     margin-bottom: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 1rem;
-    font-family: 'Inter', sans-serif;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    border: 1px solid var(--border-inset-light);
+    border-top-color: #777;
+    background-color: #fff;
+    color: #333;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    font-family: 'Tahoma', sans-serif;
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.2);
+    box-sizing: border-box;
 }
 input[type="text"]:focus, textarea:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(74, 70, 229, 0.2);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 5px var(--accent-gold);
 }
-textarea { resize: vertical; }
+textarea { resize: vertical; min-height: 100px; }
 
 button {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
+    background: linear-gradient(var(--accent-green), var(--accent-green-dark));
+    color: #fff;
+    border: 1px solid #5a633c;
+    border-top-color: #c9d0aa;
+    padding: 10px 24px;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
     margin-top: 10px;
+    width: auto;
+    box-sizing: border-box;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
 }
 button:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-2px);
-}
-button:disabled {
-    background-color: #9CA3AF;
-    cursor: not-allowed;
+    background: linear-gradient(to bottom, #aab47a, #899264);
     transform: none;
 }
-
-ul {
-    list-style-type: none;
-    padding: 0;
-    width: 100%;
+button:disabled {
+    background: #bbb;
+    border-color: #999;
+    color: #777;
+    cursor: not-allowed;
+    text-shadow: none;
 }
+
+ul { list-style-type: none; padding: 0; width: 100%; border: 1px solid #ccc; border-radius: 4px; }
 li {
-    background-color: var(--background-color);
-    border: 1px solid var(--border-color);
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    border-radius: 8px;
+    background-color: var(--table-row-light);
+    border: none;
+    border-bottom: 1px solid #ddd;
+    padding: 0.8rem;
     text-align: left;
-    transition: color 0.3s, background-color 0.3s;
+    font-size: 0.9rem;
+    color: #333;
 }
-li.disconnected {
-    color: var(--subtle-text);
-    text-decoration: line-through;
-    font-style: italic;
-    background-color: #F9FAFB;
+li:nth-child(even) {
+    background-color: var(--table-row-dark);
 }
-li.submitted {
-    color: var(--success-color);
-    border-left: 4px solid var(--success-color);
+li:last-child {
+    border-bottom: none;
 }
 
-
-hr {
-    border: 0;
-    height: 1px;
-    background: var(--border-color);
-    width: 100%;
-    margin: 2rem 0;
-}
-.problem-recap, .winner-announcement {
+.problem-recap {
     width: 100%;
     padding: 1rem;
-    background-color: #EFF6FF;
-    border: 1px solid #BFDBFE;
-    border-radius: 8px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     margin-bottom: 1rem;
     box-sizing: border-box;
 }
-.winner-announcement h3 {
-    margin: 0;
-}
+
 pre.solution-display {
-    background-color: #1F2937;
-    color: #F9FAFB;
+    background-color: #fff;
+    color: #333;
     padding: 1rem;
-    border-radius: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
     text-align: left;
     width: 100%;
     margin: 0.5rem auto;
     white-space: pre-wrap;
     word-wrap: break-word;
     font-family: monospace;
-    max-height: 250px;
+    max-height: 200px;
     overflow-y: auto;
     box-sizing: border-box;
+    font-size: 0.85rem;
 }
 
 .rank-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
+    font-weight: 700;
 }
-.rank-position { font-size: 1.25rem; }
-.rank-points { color: var(--subtle-text); font-weight: 400; }
-.player-prompt, .ai-feedback {
-    margin-top: 0.5rem;
-    padding-left: 0.5rem;
-    border-left: 3px solid var(--border-color);
-    font-size: 0.9rem;
-    word-wrap: break-word;
-}
-.ai-feedback { color: #374151; }
+.rank-position { color: var(--accent-green-dark); }
+.rank-name { color: #000; }
+.ai-feedback { color: #444; font-style: italic; }
 
-#winner-podium h3 {
-    margin: 0.8rem 0;
-    font-size: 1.5rem;
+/* Media Query for Larger Screens */
+@media (min-width: 768px) {
+    .screen-content { padding: 2rem; }
+    h1 { font-size: 2.25rem; }
+    h2 { font-size: 1.875rem; }
 }
-#winner-podium h3 small {
-    font-weight: normal;
-    color: var(--subtle-text);
-    font-size: 1rem;
-}
+
