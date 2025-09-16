@@ -1,4 +1,4 @@
-# AI Prompt Party
+# AI Prompt Jam
 
 Welcome to AI Prompt Party! This is a web-based, multiplayer party game where players compete to craft the best prompts for a generative AI based on a given problem. It's inspired by games like Jackbox, where players use their devices to interact with a central game screen.
 
