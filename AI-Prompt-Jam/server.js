@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const crypto = require('crypto');
+const fs = require('fs'); // Import the File System module
 require('dotenv').config();
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 
@@ -19,10 +20,22 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static('public'));
 
+// --- Load Game Content from JSON ---
+let levelPacks = {};
+try {
+    const levelData = fs.readFileSync('levels.json', 'utf8');
+    levelPacks = JSON.parse(levelData);
+} catch (err) {
+    console.error("Error reading or parsing levels.json:", err);
+    // Exit if levels can't be loaded, as the game is unplayable.
+    process.exit(1);
+}
+
+
 // --- Gemini API Setup ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-pro",
+    model: "gemini-1.5-pro-latest",
     safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
@@ -33,57 +46,8 @@ const model = genAI.getGenerativeModel({
 });
 const solutionModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
-
-// --- Hardcoded Game Content (Reformatted for Readability) ---
-const gameLevels = [
-    {
-        level: 1,
-        problem: `A junior developer has created a non-RESTful API endpoint:
-
-    \`POST /api/users?action=create&name=JohnDoe&email=john@example.com\`
-
-Write a prompt for AI that refactors this into a proper RESTful endpoint and implements a testing solution for the endpoint.
-
-Consider being creative with the tools used for testing (e.g., Postman, curl, unit tests).`
-    },
-    {
-        level: 2,
-        problem: `A frantic message comes from the support team: 'Our top enterprise client, MegaCorp, is completely blocked! They're getting a '500 Internal Server Error' on their main invoice processing page and threatening to cancel. We need a hotfix immediately!'
-        
-Write a prompt for AI to act as a team lead and create a comprehensive action plan.
-
-Consider all team responsibilities, i.e. DEV/QA/PO`
-    },
-    {
-        level: 3,
-        problem: `You have a complex C# function:
-
-    \`public decimal CalculateProratedSubscription(DateTime startDate, DateTime endDate, decimal monthlyRate)\`
-
-Write a prompt for an AI to generate a comprehensive suite of xUnit tests for this function, ensuring it covers as many edge cases as possible.
-
-Consider edge cases like leap years, month-end dates, and invalid date ranges.`
-    },
-    {
-        level: 4,
-        problem: `Management has submitted a vague feature request: 'We need to improve the user dashboard. Make it look better and run faster.'
-
-Write a prompt for an AI to act as a product owner and break this request down into a structured set of Jira tickets.
-
-Consider coming up with an Epic that would resolve the feature request and having AI create the tickets for it.`
-    },
-    {
-        level: 5,
-        problem: `A new user login page needs to be created. It should handle all the normal things a user login page handles.
-
-Write a prompt for AI to prototype the login page. 
-
-Consider including notes about styling and security features.`
-    }
-];
-
 // --- Game State Management ---
-let gameState = { players: {}, gameMasterSocketId: null, currentLevel: 0, gameStarted: false, prompts: {}, phase: 'LOBBY', lastRoundResults: null };
+let gameState = { players: {}, gameMasterSocketId: null, currentLevel: 0, gameStarted: false, prompts: {}, phase: 'LOBBY', lastRoundResults: null, levels: [] };
 let socketIdToPlayerIdMap = {};
 
 // --- Helper Functions ---
@@ -160,6 +124,7 @@ io.on('connection', (socket) => {
         console.log(`Game Master has connected: ${socket.id}`);
         gameState.gameMasterSocketId = socket.id;
         socket.emit('gameCreated', 'You are the Game Master. Waiting for players...');
+        socket.emit('levelPacksAvailable', Object.keys(levelPacks));
     });
 
     socket.on('joinGame', (playerName) => {
@@ -195,7 +160,7 @@ io.on('connection', (socket) => {
                     socket.emit('showInstructions');
                     break;
                 case 'PROMPTING':
-                    const currentProblem = gameLevels[gameState.currentLevel - 1];
+                    const currentProblem = gameState.levels[gameState.currentLevel - 1];
                     socket.emit('levelStart', currentProblem);
                     if (gameState.prompts[playerId]) {
                         socket.emit('promptAccepted');
@@ -210,7 +175,7 @@ io.on('connection', (socket) => {
                     break;
                 case 'LEADERBOARD':
                     const overallLeaderboard = Object.values(gameState.players).sort((a, b) => b.score - a.score);
-                    socket.emit('showLeaderboard', { overallLeaderboard, currentLevel: gameState.currentLevel, totalLevels: gameLevels.length });
+                    socket.emit('showLeaderboard', { overallLeaderboard, currentLevel: gameState.currentLevel, totalLevels: gameState.levels.length });
                     break;
                 case 'GAMEOVER':
                      const finalLeaderboard = Object.values(gameState.players).sort((a, b) => b.score - a.score);
@@ -222,10 +187,17 @@ io.on('connection', (socket) => {
         }
     });
     
-    socket.on('startGame', () => {
+    socket.on('startGame', ({ levelPackName }) => {
         if (socket.id !== gameState.gameMasterSocketId) return;
         
-        console.log('Game Master is starting the game. Showing instructions.');
+        const selectedLevels = levelPacks[levelPackName];
+        if (!selectedLevels) {
+            socket.emit('errorMsg', 'Invalid level pack selected.');
+            return;
+        }
+        
+        console.log(`Game Master is starting the game with pack: ${levelPackName}. Showing instructions.`);
+        gameState.levels = selectedLevels;
         gameState.gameStarted = true;
         gameState.phase = 'INSTRUCTIONS';
         io.emit('showInstructions');
@@ -239,7 +211,7 @@ io.on('connection', (socket) => {
         gameState.prompts = {}; 
         gameState.phase = 'PROMPTING';
 
-        const currentProblem = gameLevels[gameState.currentLevel - 1];
+        const currentProblem = gameState.levels[gameState.currentLevel - 1];
         io.emit('levelStart', currentProblem);
         io.to(gameState.gameMasterSocketId).emit('updateSubmissionStatus', {
             players: Object.values(gameState.players),
@@ -279,7 +251,7 @@ io.on('connection', (socket) => {
             return;
         };
         
-        const problemForRound = gameLevels[gameState.currentLevel - 1].problem;
+        const problemForRound = gameState.levels[gameState.currentLevel - 1].problem;
         const rankedPlayersWithReasons = await getGeminiRanking(promptsToRank, problemForRound);
         
         if (!rankedPlayersWithReasons || rankedPlayersWithReasons.length === 0) {
@@ -321,13 +293,13 @@ io.on('connection', (socket) => {
         io.emit('showLeaderboard', { 
             overallLeaderboard,
             currentLevel: gameState.currentLevel,
-            totalLevels: gameLevels.length 
+            totalLevels: gameState.levels.length 
         });
     });
 
     socket.on('nextLevel', () => {
         if (socket.id !== gameState.gameMasterSocketId) return;
-        if (gameState.currentLevel >= gameLevels.length) {
+        if (gameState.currentLevel >= gameState.levels.length) {
             const finalLeaderboard = Object.values(gameState.players).sort((a, b) => b.score - a.score);
             io.emit('gameOver', { finalLeaderboard });
             return;
@@ -337,7 +309,7 @@ io.on('connection', (socket) => {
         gameState.prompts = {};
         gameState.phase = 'PROMPTING';
         gameState.lastRoundResults = null;
-        const currentProblem = gameLevels[gameState.currentLevel - 1];
+        const currentProblem = gameState.levels[gameState.currentLevel - 1];
         io.emit('levelStart', currentProblem);
         io.to(gameState.gameMasterSocketId).emit('updateSubmissionStatus', {
             players: Object.values(gameState.players),
@@ -359,7 +331,7 @@ io.on('connection', (socket) => {
 
         if (socket.id === gameState.gameMasterSocketId) {
             console.log('Game Master disconnected. Resetting game.');
-            gameState = { players: {}, gameMasterSocketId: null, gameStarted: false, currentLevel: 0, prompts: {}, phase: 'LOBBY', lastRoundResults: null };
+            gameState = { players: {}, gameMasterSocketId: null, gameStarted: false, currentLevel: 0, prompts: {}, phase: 'LOBBY', lastRoundResults: null, levels: [] };
             socketIdToPlayerIdMap = {};
             io.emit('gameReset', 'The Game Master has disconnected. The game has been reset.');
         } else if (playerId && gameState.players[playerId]) {

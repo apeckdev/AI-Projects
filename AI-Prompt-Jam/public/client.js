@@ -1,6 +1,6 @@
 const socket = io({
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: 10,
     reconnectionDelay: 1000,
 });
 
@@ -29,6 +29,11 @@ const overallLeaderboard = document.getElementById('overall-leaderboard');
 const gameOverScreen = document.getElementById('game-over-screen');
 const winnerPodium = document.getElementById('winner-podium');
 
+// --- Reconnect Logic Elements ---
+const reconnectOverlay = document.getElementById('reconnect-overlay');
+const reconnectButton = document.getElementById('reconnect-button');
+
+
 // --- Rejoin Logic on page load ---
 const storedPlayerId = localStorage.getItem('ai_prompt_party_player_id');
 if (storedPlayerId) {
@@ -56,7 +61,27 @@ submitPromptButton.addEventListener('click', () => {
     }
 });
 
+reconnectButton.addEventListener('click', () => {
+    socket.connect();
+});
+
 // --- Socket Event Handlers ---
+
+socket.on('connect', () => {
+    console.log("Connected to server.");
+    reconnectOverlay.style.display = 'none'; // Hide overlay on successful connection
+    const storedPlayerId = localStorage.getItem('ai_prompt_party_player_id');
+    if (storedPlayerId && !socket.reconnected) { // Prevent re-rejoining on initial connect
+         socket.emit('rejoinGame', storedPlayerId);
+    }
+});
+
+socket.on('disconnect', () => {
+    console.log("Disconnected from server.");
+    reconnectOverlay.style.display = 'flex'; // Show overlay on disconnect
+});
+
+
 socket.on('joinSuccess', ({ message, playerId }) => {
     localStorage.setItem('ai_prompt_party_player_id', playerId);
     showScreen('lobby-screen');

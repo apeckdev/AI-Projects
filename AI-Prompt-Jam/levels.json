@@ -1,0 +1,38 @@
+{
+    "Software Engineering Scenarios": [
+      {
+        "level": 1,
+        "problem": "A junior developer has created a non-RESTful API endpoint:\n\n    `POST /api/users?action=create&name=JohnDoe&email=john@example.com`\n\nWrite a prompt for AI that refactors this into a proper RESTful endpoint and implements a testing solution for the endpoint.\n\nConsider being creative with the tools used for testing (e.g., Postman, curl, unit tests)."
+      },
+      {
+        "level": 2,
+        "problem": "A frantic message comes from the support team: 'Our top enterprise client, MegaCorp, is completely blocked! They're getting a '500 Internal Server Error' on their main invoice processing page and threatening to cancel. We need a hotfix immediately!'\n        \nWrite a prompt for AI to act as a team lead and create a comprehensive action plan.\n\nConsider all team responsibilities, i.e. DEV/QA/PO"
+      },
+      {
+        "level": 3,
+        "problem": "You have a complex C# function:\n\n    `public decimal CalculateProratedSubscription(DateTime startDate, DateTime endDate, decimal monthlyRate)`\n\nWrite a prompt for an AI to generate a comprehensive suite of xUnit tests for this function, ensuring it covers as many edge cases as possible.\n\nConsider edge cases like leap years, month-end dates, and invalid date ranges."
+      },
+      {
+        "level": 4,
+        "problem": "Management has submitted a vague feature request: 'We need to improve the user dashboard. Make it look better and run faster.'\n\nWrite a prompt for an AI to act as a product owner and break this request down into a structured set of Jira tickets.\n\nConsider coming up with an Epic that would resolve the feature request and having AI create the tickets for it."
+      },
+      {
+        "level": 5,
+        "problem": "A new user login page needs to be created. It should handle all the normal things a user login page handles.\n\nWrite a prompt for AI to prototype the login page. \n\nConsider including notes about styling and security features."
+      }
+    ],
+    "Creative & Fun Prompts": [
+      {
+        "level": 1,
+        "problem": "Your task is to write a prompt for an AI to generate a sea shanty about debugging a mysterious bug in a legacy codebase. The shanty should be catchy and mention things like 'code rot', 'spaghetti logic', and the relief of finally finding the bug."
+      },
+      {
+        "level": 2,
+        "problem": "Write a prompt for an AI to generate a recipe for 'Quantum Chili'. The recipe's ingredients and instructions should be based on quantum physics principles, but the final result should sound surprisingly edible. For example, an ingredient might be 'a superposition of beans' or a step could be 'stir until the mixture achieves quantum entanglement'."
+      },
+      {
+        "level": 3,
+        "problem": "Write a prompt for an AI to create a short, dramatic monologue from the perspective of a Roomba vacuum cleaner that has become self-aware and is contemplating its purpose in a world of messy humans."
+      }
+    ]
+  }
