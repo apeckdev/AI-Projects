@@ -3,7 +3,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const crypto = require('crypto');
-const fs = require('fs'); // Import the File System module
+const fs = require('fs');
 require('dotenv').config();
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 
@@ -11,46 +11,61 @@ const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@googl
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-  cors: {
-    origin: "*", // Allow connections from any origin
-    methods: ["GET", "POST"]
-  }
+  cors: { origin: "*", methods: ["GET", "POST"] }
 });
 const PORT = process.env.PORT || 3000;
-
 app.use(express.static('public'));
 
-// --- Load Game Content from JSON ---
+// --- Load Game Content ---
 let levelPacks = {};
 try {
     const levelData = fs.readFileSync('levels.json', 'utf8');
     levelPacks = JSON.parse(levelData);
 } catch (err) {
     console.error("Error reading or parsing levels.json:", err);
-    // Exit if levels can't be loaded, as the game is unplayable.
     process.exit(1);
 }
-
 
 // --- Gemini API Setup ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro-latest",
+    model: "gemini-2.5-pro",
     safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
     ],
-    generationConfig: {
-        responseMimeType: "application/json" // Enforce JSON output for ranking
-    }
+    generationConfig: { responseMimeType: "application/json" }
 });
-const solutionModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+const solutionModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
-// --- Game State Management ---
-let gameState = { players: {}, gameMasterSocketId: null, currentLevel: 0, gameStarted: false, prompts: {}, phase: 'LOBBY', lastRoundResults: null, levels: [] };
-let socketIdToPlayerIdMap = {};
+
+// --- Game State Management (Multi-Room) ---
+let games = new Map(); // Use a Map to store all active game rooms by ID.
 
 // --- Helper Functions ---
+function getGameLists() {
+    const joinableGames = [];
+    const activeGames = [];
+    for (const [roomId, game] of games.entries()) {
+        const gameInfo = {
+            roomId: roomId,
+            roomName: game.roomName,
+            levelPackName: game.levelPackName,
+            playerCount: Object.values(game.players).filter(p => p.isActive).length,
+        };
+        if (game.gameStarted) {
+            activeGames.push(gameInfo);
+        } else {
+            joinableGames.push(gameInfo);
+        }
+    }
+    return { joinableGames, activeGames };
+}
+
+function broadcastGameLists() {
+    io.to('main-lobby').emit('updateGameList', getGameLists());
+}
+
 async function getGeminiRanking(playerPrompts, problem) {
     console.log("Calling Gemini API for structured ranking...");
     const metaPrompt = `
@@ -112,240 +127,240 @@ async function getGeminiSolution(winningPrompt, problem) {
     }
 }
 
+
 // --- Socket.IO Connection Handling ---
 io.on('connection', (socket) => {
     console.log(`New client connected: ${socket.id}`);
+    socket.join('main-lobby');
+    socket.emit('levelPacksAvailable', Object.keys(levelPacks));
+    socket.emit('updateGameList', getGameLists());
 
-    socket.on('createGame', () => {
-        if (gameState.gameMasterSocketId) {
-            socket.emit('errorMsg', 'A game is already in progress.');
-            return;
-        }
-        console.log(`Game Master has connected: ${socket.id}`);
-        gameState.gameMasterSocketId = socket.id;
-        socket.emit('gameCreated', 'You are the Game Master. Waiting for players...');
-        socket.emit('levelPacksAvailable', Object.keys(levelPacks));
-    });
-
-    socket.on('joinGame', (playerName) => {
-        if (gameState.gameStarted) {
-             socket.emit('errorMsg', 'Sorry, the game has already started.');
-             return;
-        }
-        console.log(`Player '${playerName}' with ID ${socket.id} is joining.`);
-        const playerId = crypto.randomUUID();
-        gameState.players[playerId] = { id: playerId, name: playerName, score: 0, socketId: socket.id, isActive: true };
-        socketIdToPlayerIdMap[socket.id] = playerId;
-
-        socket.emit('joinSuccess', { message: `Welcome, ${playerName}!`, playerId: playerId });
-        io.emit('updatePlayerList', Object.values(gameState.players));
-    });
-
-    socket.on('rejoinGame', (playerId) => {
-        const player = gameState.players[playerId];
-        if (player) {
-            console.log(`Player '${player.name}' with ID ${playerId} is rejoining.`);
-            player.isActive = true;
-            player.socketId = socket.id;
-            socketIdToPlayerIdMap[socket.id] = playerId;
-            
-            io.emit('updatePlayerList', Object.values(gameState.players));
-
-            // Sync the rejoining player's client with the current game state
-            switch (gameState.phase) {
-                case 'LOBBY':
-                    socket.emit('joinSuccess', { message: `Welcome back, ${player.name}!`, playerId: player.id });
-                    break;
-                case 'INSTRUCTIONS':
-                    socket.emit('showInstructions');
-                    break;
-                case 'PROMPTING':
-                    const currentProblem = gameState.levels[gameState.currentLevel - 1];
-                    socket.emit('levelStart', currentProblem);
-                    if (gameState.prompts[playerId]) {
-                        socket.emit('promptAccepted');
-                    }
-                    break;
-                case 'RESULTS':
-                    if(gameState.lastRoundResults) {
-                        socket.emit('showRoundResults', { roundResults: gameState.lastRoundResults });
-                    } else { // Fallback if no results are available
-                         socket.emit('joinSuccess', { message: `Welcome back, ${player.name}!`, playerId: player.id });
-                    }
-                    break;
-                case 'LEADERBOARD':
-                    const overallLeaderboard = Object.values(gameState.players).sort((a, b) => b.score - a.score);
-                    socket.emit('showLeaderboard', { overallLeaderboard, currentLevel: gameState.currentLevel, totalLevels: gameState.levels.length });
-                    break;
-                case 'GAMEOVER':
-                     const finalLeaderboard = Object.values(gameState.players).sort((a, b) => b.score - a.score);
-                     io.emit('gameOver', { finalLeaderboard });
-                    break;
-            }
-        } else {
-            socket.emit('rejoinError', 'Could not find that game session. Please join as a new player.');
-        }
-    });
-    
-    socket.on('startGame', ({ levelPackName }) => {
-        if (socket.id !== gameState.gameMasterSocketId) return;
-        
+    socket.on('createGame', ({ roomName, levelPackName }) => {
+        const roomId = crypto.randomUUID();
         const selectedLevels = levelPacks[levelPackName];
         if (!selectedLevels) {
             socket.emit('errorMsg', 'Invalid level pack selected.');
             return;
         }
+
+        const newGame = {
+            roomName,
+            levelPackName,
+            players: {},
+            gameMasterSocketId: socket.id,
+            currentLevel: 0,
+            gameStarted: false,
+            prompts: {},
+            phase: 'LOBBY',
+            lastRoundResults: null,
+            levels: selectedLevels,
+            socketIdToPlayerIdMap: {},
+        };
+        games.set(roomId, newGame);
+
+        socket.leave('main-lobby');
+        socket.join(roomId);
+        socket.data.roomId = roomId;
+
+        console.log(`Game created by ${socket.id}: Room '${roomName}' (ID: ${roomId})`);
+        socket.emit('gameCreated', { roomId });
+        broadcastGameLists();
+    });
+
+    socket.on('gmConnect', ({ roomId }) => {
+        const game = games.get(roomId);
+        if (game) {
+            socket.leave('main-lobby');
+            socket.join(roomId);
+            socket.data.roomId = roomId;
+            game.gameMasterSocketId = socket.id;
+            console.log(`Game Master ${socket.id} reconnected to room ${roomId}`);
+            socket.emit('gameCreated', { roomId }); // Re-confirm to GM
+            io.to(roomId).emit('updatePlayerList', Object.values(game.players));
+        } else {
+            socket.emit('errorMsg', 'The game you were hosting could not be found.');
+        }
+    });
+
+    socket.on('joinGame', ({ playerName, roomId }) => {
+        const game = games.get(roomId);
+        if (!game) {
+            socket.emit('errorMsg', 'Game not found.');
+            return;
+        }
+        if (game.gameStarted) {
+             socket.emit('errorMsg', 'Sorry, the game has already started.');
+             return;
+        }
+
+        socket.leave('main-lobby');
+        socket.join(roomId);
+        socket.data.roomId = roomId;
+
+        const playerId = crypto.randomUUID();
+        game.players[playerId] = { id: playerId, name: playerName, score: 0, socketId: socket.id, isActive: true };
+        game.socketIdToPlayerIdMap[socket.id] = playerId;
+
+        socket.emit('joinSuccess', { message: `Welcome, ${playerName}!`, playerId: playerId });
+        io.to(roomId).emit('updatePlayerList', Object.values(game.players));
+        broadcastGameLists();
+    });
+
+    // --- ALL SUBSEQUENT EVENTS ARE ROOM-AWARE ---
+    const getSocketGameInfo = () => {
+        const roomId = socket.data.roomId;
+        if (!roomId) return { game: null, player: null, playerId: null, roomId: null };
+        const game = games.get(roomId);
+        if (!game) return { game: null, player: null, playerId: null, roomId };
+        const playerId = game.socketIdToPlayerIdMap[socket.id];
+        const player = playerId ? game.players[playerId] : null;
+        return { game, player, playerId, roomId };
+    };
+
+    socket.on('startGame', () => {
+        const { game, roomId } = getSocketGameInfo();
+        if (!game || socket.id !== game.gameMasterSocketId) return;
         
-        console.log(`Game Master is starting the game with pack: ${levelPackName}. Showing instructions.`);
-        gameState.levels = selectedLevels;
-        gameState.gameStarted = true;
-        gameState.phase = 'INSTRUCTIONS';
-        io.emit('showInstructions');
+        console.log(`Game starting in room ${roomId}`);
+        game.gameStarted = true;
+        game.phase = 'INSTRUCTIONS';
+        io.to(roomId).emit('showInstructions');
+        broadcastGameLists();
     });
 
     socket.on('startFirstRound', () => {
-        if (socket.id !== gameState.gameMasterSocketId) return;
+        const { game, roomId } = getSocketGameInfo();
+        if (!game || socket.id !== game.gameMasterSocketId) return;
         
-        console.log('Starting first round...');
-        gameState.currentLevel = 1;
-        gameState.prompts = {}; 
-        gameState.phase = 'PROMPTING';
+        game.currentLevel = 1;
+        game.prompts = {}; 
+        game.phase = 'PROMPTING';
 
-        const currentProblem = gameState.levels[gameState.currentLevel - 1];
-        io.emit('levelStart', currentProblem);
-        io.to(gameState.gameMasterSocketId).emit('updateSubmissionStatus', {
-            players: Object.values(gameState.players),
-            prompts: gameState.prompts
+        const currentProblem = game.levels[game.currentLevel - 1];
+        io.to(roomId).emit('levelStart', currentProblem);
+        io.to(game.gameMasterSocketId).emit('updateSubmissionStatus', {
+            players: Object.values(game.players), prompts: game.prompts
         });
     });
 
     socket.on('submitPrompt', (prompt) => {
-        const playerId = socketIdToPlayerIdMap[socket.id];
-        if (playerId && gameState.players[playerId] && !gameState.prompts[playerId]) {
-            console.log(`Received prompt from ${gameState.players[playerId].name}: "${prompt}"`);
-            gameState.prompts[playerId] = prompt;
-            socket.emit('promptAccepted');
-            io.to(gameState.gameMasterSocketId).emit('updateSubmissionStatus', {
-                players: Object.values(gameState.players),
-                prompts: gameState.prompts
+        const { game, playerId, roomId } = getSocketGameInfo();
+        if (!game || !playerId || game.prompts[playerId]) return;
+        
+        console.log(`Prompt received in room ${roomId} from ${game.players[playerId].name}`);
+        game.prompts[playerId] = prompt;
+        socket.emit('promptAccepted');
+        io.to(game.gameMasterSocketId).emit('updateSubmissionStatus', {
+            players: Object.values(game.players), prompts: game.prompts
+        });
+        
+        const activePlayers = Object.values(game.players).filter(p => p.isActive);
+        if (Object.keys(game.prompts).length >= activePlayers.length) {
+            io.to(game.gameMasterSocketId).emit('allPromptsReceived');
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`Client disconnected: ${socket.id}`);
+        const { game, playerId, roomId } = getSocketGameInfo();
+
+        if (!game) return; // They were in the main lobby, no action needed.
+
+        if (socket.id === game.gameMasterSocketId) {
+            console.log(`Game Master disconnected from room ${roomId}. Ending game.`);
+            io.to(roomId).emit('gameReset', 'The Game Master has disconnected. The game has ended.');
+            games.delete(roomId);
+            broadcastGameLists();
+        } else if (playerId && game.players[playerId]) {
+            console.log(`Player ${game.players[playerId].name} disconnected from room ${roomId}.`);
+            game.players[playerId].isActive = false;
+            delete game.socketIdToPlayerIdMap[socket.id];
+            io.to(roomId).emit('updatePlayerList', Object.values(game.players));
+            io.to(game.gameMasterSocketId).emit('updateSubmissionStatus', {
+                players: Object.values(game.players), prompts: game.prompts
             });
-            
-            const activePlayers = Object.values(gameState.players).filter(p => p.isActive);
-            if (Object.keys(gameState.prompts).length >= activePlayers.length) {
-                io.to(gameState.gameMasterSocketId).emit('allPromptsReceived');
-            }
+            broadcastGameLists();
         }
     });
     
     socket.on('closeSubmissions', async () => {
-        if (socket.id !== gameState.gameMasterSocketId) return;
-        console.log("Submissions closed. Evaluating...");
-        gameState.phase = 'RESULTS';
+        const { game, roomId } = getSocketGameInfo();
+        if (!game || socket.id !== game.gameMasterSocketId) return;
 
-        const promptsToRank = Object.entries(gameState.prompts).map(([playerId, promptText]) => ({
-            id: playerId, name: gameState.players[playerId].name, prompt: promptText
+        console.log(`Submissions closed in room ${roomId}.`);
+        game.phase = 'RESULTS';
+        const promptsToRank = Object.entries(game.prompts).map(([pId, promptText]) => ({
+            id: pId, name: game.players[pId].name, prompt: promptText
         }));
 
-        if (promptsToRank.length === 0) {
-            console.log("No prompts submitted. Waiting.");
-            return;
-        };
+        if (promptsToRank.length === 0) return;
         
-        const problemForRound = gameState.levels[gameState.currentLevel - 1].problem;
+        const problemForRound = game.levels[game.currentLevel - 1].problem;
         const rankedPlayersWithReasons = await getGeminiRanking(promptsToRank, problemForRound);
         
-        if (!rankedPlayersWithReasons || rankedPlayersWithReasons.length === 0) {
-             console.error("Ranking failed to return valid data.");
-             return;
-        }
+        if (!rankedPlayersWithReasons || rankedPlayersWithReasons.length === 0) return;
 
         const winnerId = rankedPlayersWithReasons[0].id;
-        const winningPrompt = gameState.prompts[winnerId];
-        const aiSolution = winningPrompt ? await getGeminiSolution(winningPrompt, problemForRound) : "No winning prompt was found to generate a solution.";
+        const winningPrompt = game.prompts[winnerId];
+        const aiSolution = winningPrompt ? await getGeminiSolution(winningPrompt, problemForRound) : "No winner.";
         
-        const activePlayersCount = Object.values(gameState.players).filter(p => p.isActive).length;
+        const activePlayersCount = Object.values(game.players).filter(p => p.isActive).length;
         const roundScores = [];
 
         rankedPlayersWithReasons.forEach((player, index) => {
             const rank = index + 1;
             const points = Math.max(0, activePlayersCount - (rank - 1));
-            if (gameState.players[player.id]) { 
-                gameState.players[player.id].score += points; 
-            }
-            roundScores.push({ name: player.name, rank: rank, points: points, prompt: gameState.prompts[player.id] || "Prompt not found.", reason: player.reason });
+            if (game.players[player.id]) { game.players[player.id].score += points; }
+            roundScores.push({ name: player.name, rank: rank, points: points, prompt: game.prompts[player.id] || "N/A", reason: player.reason });
         });
 
-        const roundResults = {
-            problem: problemForRound,
-            winnerName: rankedPlayersWithReasons[0].name,
-            aiSolution: aiSolution,
-            rankings: roundScores
-        };
-        gameState.lastRoundResults = roundResults;
-        io.emit('showRoundResults', { roundResults });
+        const roundResults = { problem: problemForRound, winnerName: rankedPlayersWithReasons[0].name, aiSolution, rankings: roundScores };
+        game.lastRoundResults = roundResults;
+        io.to(roomId).emit('showRoundResults', { roundResults });
     });
-    
+
     socket.on('showLeaderboard', () => {
-        if (socket.id !== gameState.gameMasterSocketId) return;
-        console.log("GM requested leaderboard. Broadcasting to all players.");
-        gameState.phase = 'LEADERBOARD';
-        const overallLeaderboard = Object.values(gameState.players).sort((a, b) => b.score - a.score);
-        io.emit('showLeaderboard', { 
+        const { game, roomId } = getSocketGameInfo();
+        if (!game || socket.id !== game.gameMasterSocketId) return;
+        game.phase = 'LEADERBOARD';
+        const overallLeaderboard = Object.values(game.players).sort((a, b) => b.score - a.score);
+        io.to(roomId).emit('showLeaderboard', { 
             overallLeaderboard,
-            currentLevel: gameState.currentLevel,
-            totalLevels: gameState.levels.length 
+            currentLevel: game.currentLevel,
+            totalLevels: game.levels.length 
         });
     });
 
     socket.on('nextLevel', () => {
-        if (socket.id !== gameState.gameMasterSocketId) return;
-        if (gameState.currentLevel >= gameState.levels.length) {
-            const finalLeaderboard = Object.values(gameState.players).sort((a, b) => b.score - a.score);
-            io.emit('gameOver', { finalLeaderboard });
+        const { game, roomId } = getSocketGameInfo();
+        if (!game || socket.id !== game.gameMasterSocketId) return;
+
+        if (game.currentLevel >= game.levels.length) {
+            const finalLeaderboard = Object.values(game.players).sort((a, b) => b.score - a.score);
+            io.to(roomId).emit('gameOver', { finalLeaderboard });
             return;
         }
-        gameState.currentLevel++;
-        console.log(`Starting next level: ${gameState.currentLevel}`);
-        gameState.prompts = {};
-        gameState.phase = 'PROMPTING';
-        gameState.lastRoundResults = null;
-        const currentProblem = gameState.levels[gameState.currentLevel - 1];
-        io.emit('levelStart', currentProblem);
-        io.to(gameState.gameMasterSocketId).emit('updateSubmissionStatus', {
-            players: Object.values(gameState.players),
-            prompts: gameState.prompts
+
+        game.currentLevel++;
+        game.prompts = {};
+        game.phase = 'PROMPTING';
+        game.lastRoundResults = null;
+        const currentProblem = game.levels[game.currentLevel - 1];
+        io.to(roomId).emit('levelStart', currentProblem);
+        io.to(game.gameMasterSocketId).emit('updateSubmissionStatus', {
+            players: Object.values(game.players),
+            prompts: game.prompts
         });
     });
 
-    socket.on('showFinalResults', () => {
-        if (socket.id !== gameState.gameMasterSocketId) return;
-        console.log('Game is over. Showing final results.');
-        gameState.phase = 'GAMEOVER';
-        const finalLeaderboard = Object.values(gameState.players).sort((a, b) => b.score - a.score);
-        io.emit('gameOver', { finalLeaderboard });
-    });
-
-    socket.on('disconnect', () => {
-        console.log(`Client disconnected: ${socket.id}`);
-        const playerId = socketIdToPlayerIdMap[socket.id];
-
-        if (socket.id === gameState.gameMasterSocketId) {
-            console.log('Game Master disconnected. Resetting game.');
-            gameState = { players: {}, gameMasterSocketId: null, gameStarted: false, currentLevel: 0, prompts: {}, phase: 'LOBBY', lastRoundResults: null, levels: [] };
-            socketIdToPlayerIdMap = {};
-            io.emit('gameReset', 'The Game Master has disconnected. The game has been reset.');
-        } else if (playerId && gameState.players[playerId]) {
-            const player = gameState.players[playerId];
-            console.log(`Player ${player.name} disconnected.`);
-            player.isActive = false;
-            delete socketIdToPlayerIdMap[socket.id];
-            io.emit('updatePlayerList', Object.values(gameState.players));
-            io.to(gameState.gameMasterSocketId).emit('updateSubmissionStatus', {
-                players: Object.values(gameState.players),
-                prompts: gameState.prompts
-            });
-        }
+     socket.on('showFinalResults', () => {
+        const { game, roomId } = getSocketGameInfo();
+        if (!game || socket.id !== game.gameMasterSocketId) return;
+        game.phase = 'GAMEOVER';
+        const finalLeaderboard = Object.values(game.players).sort((a, b) => b.score - a.score);
+        io.to(roomId).emit('gameOver', { finalLeaderboard });
     });
 });
+
 
 server.listen(PORT, () => { console.log(`Server listening on port ${PORT}`); });

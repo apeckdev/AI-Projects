@@ -1,5 +1,14 @@
 const socket = io();
 
+// --- Get Room ID from URL ---
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get('roomId');
+
+if (!roomId) {
+    alert("No Room ID found. You will be redirected to the main lobby.");
+    window.location.href = '/';
+}
+
 // --- Screen Management ---
 const screens = document.querySelectorAll('.screen');
 function showScreen(screenId) {
@@ -11,7 +20,6 @@ function showScreen(screenId) {
 // --- Get DOM Elements ---
 const gmStatus = document.getElementById('gm-status');
 const playerList = document.getElementById('player-list');
-const levelPackSelect = document.getElementById('level-pack-select');
 const startGameButton = document.getElementById('start-game-button');
 const startFirstRoundButton = document.getElementById('start-first-round-button');
 const levelNumber = document.getElementById('level-number');
@@ -29,16 +37,14 @@ const gameOverScreen = document.getElementById('game-over-screen');
 const winnerPodium = document.getElementById('winner-podium');
 const showLeaderboardButton = document.getElementById('show-leaderboard-button');
 
-// --- On connect, declare this client as the Game Master ---
-socket.on('connect', () => { socket.emit('createGame'); });
+
+// --- On connect, declare which game this GM belongs to ---
+socket.on('connect', () => {
+    socket.emit('gmConnect', { roomId });
+});
 
 // --- Event Listeners ---
-startGameButton.addEventListener('click', () => {
-    const selectedPack = levelPackSelect.value;
-    if (selectedPack) {
-        socket.emit('startGame', { levelPackName: selectedPack });
-    }
-});
+startGameButton.addEventListener('click', () => { socket.emit('startGame'); });
 startFirstRoundButton.addEventListener('click', () => { socket.emit('startFirstRound'); });
 closeSubmissionsButton.addEventListener('click', () => {
     if (confirm('Are you sure you want to close submissions and evaluate the prompts?')) {
@@ -51,18 +57,8 @@ nextLevelButton.addEventListener('click', () => { socket.emit('nextLevel'); });
 finalResultsButton.addEventListener('click', () => { socket.emit('showFinalResults'); });
 
 // --- Socket Event Handlers ---
-socket.on('gameCreated', (message) => { gmStatus.textContent = message; });
-
-socket.on('levelPacksAvailable', (packNames) => {
-    levelPackSelect.innerHTML = ''; // Clear loading message
-    packNames.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        levelPackSelect.appendChild(option);
-    });
-    levelPackSelect.disabled = false;
-    startGameButton.disabled = false;
+socket.on('gameCreated', (data) => {
+    console.log(`Connected to game room: ${data.roomId}`);
 });
 
 socket.on('updatePlayerList', (players) => {
@@ -86,12 +82,11 @@ socket.on('levelStart', (levelData) => {
     closeSubmissionsButton.disabled = false;
     levelNumber.textContent = levelData.level;
     problemText.textContent = levelData.problem;
+    submissionList.innerHTML = ''; // Clear old submissions
 });
 
 socket.on('updateSubmissionStatus', ({ players, prompts }) => {
     submissionList.innerHTML = '';
-    const activePlayerIds = new Set(players.filter(p => p.isActive).map(p => p.id));
-    
     players.forEach(player => {
         const li = document.createElement('li');
         const hasSubmitted = prompts[player.id];
@@ -163,5 +158,12 @@ socket.on('gameOver', ({ finalLeaderboard }) => {
     }
 });
 
-socket.on('errorMsg', (message) => { alert(message); });
-socket.on('gameReset', (message) => { alert(message); window.location.reload(); });
+socket.on('gameReset', (message) => { 
+    alert(message); 
+    window.location.href = '/'; 
+});
+
+socket.on('errorMsg', (message) => { 
+    alert(message); 
+    window.location.href = '/'; 
+});
