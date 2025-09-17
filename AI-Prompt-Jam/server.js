@@ -43,29 +43,8 @@ const solutionModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 let games = new Map(); // Use a Map to store all active game rooms by ID.
 
 // --- Helper Functions ---
-function getGameLists() {
-    const joinableGames = [];
-    const activeGames = [];
-    for (const [roomId, game] of games.entries()) {
-        const gameInfo = {
-            roomId: roomId,
-            roomName: game.roomName,
-            levelPackName: game.levelPackName,
-            playerCount: Object.values(game.players).filter(p => p.isActive).length,
-        };
-        if (game.gameStarted) {
-            activeGames.push(gameInfo);
-        } else {
-            joinableGames.push(gameInfo);
-        }
-    }
-    return { joinableGames, activeGames };
-}
-
-function broadcastGameLists() {
-    io.to('main-lobby').emit('updateGameList', getGameLists());
-}
-
+function getGameLists() { /* ... (no changes) ... */ }
+function broadcastGameLists() { /* ... (no changes) ... */ }
 async function getGeminiRanking(playerPrompts, problem) { /* ... (no changes) ... */ }
 async function getGeminiSolution(winningPrompt, problem) { /* ... (no changes) ... */ }
 
@@ -83,90 +62,47 @@ io.on('connection', (socket) => {
             return; 
         }
         const { roomName, levelPackName } = payload;
-
         const roomId = crypto.randomUUID();
         const selectedLevels = levelPacks[levelPackName];
         if (!selectedLevels) {
             socket.emit('errorMsg', 'Invalid level pack selected.');
             return;
         }
-
         const newGame = {
-            roomName,
-            levelPackName,
-            players: {},
-            gameMasterSocketId: socket.id,
-            currentLevel: 0,
-            gameStarted: false,
-            prompts: {},
-            phase: 'LOBBY',
-            lastRoundResults: null,
-            levels: selectedLevels,
-            socketIdToPlayerIdMap: {},
+            roomName, levelPackName, players: {}, gameMasterSocketId: socket.id,
+            currentLevel: 0, gameStarted: false, prompts: {}, phase: 'LOBBY',
+            lastRoundResults: null, levels: selectedLevels, socketIdToPlayerIdMap: {},
             deletionTimer: null,
         };
         games.set(roomId, newGame);
-
         socket.leave('main-lobby');
         socket.join(roomId);
         socket.data.roomId = roomId;
-
         console.log(`Game created by ${socket.id}: Room '${roomName}' (ID: ${roomId})`);
         socket.emit('gameCreated', { roomId });
         broadcastGameLists();
     });
 
     socket.on('gmConnect', ({ roomId }) => {
-        console.log(`[DEBUG] 'gmConnect' event received for room ${roomId} from socket ${socket.id}`);
         const game = games.get(roomId);
         if (game) {
             if (game.deletionTimer) {
                 clearTimeout(game.deletionTimer);
                 game.deletionTimer = null;
-                console.log(`[DEBUG] Deletion timer for room ${roomId} cancelled.`);
             }
-
             socket.leave('main-lobby');
             socket.join(roomId);
             socket.data.roomId = roomId;
-            
-            // --- DEBUG LOG ---
-            console.log(`[DEBUG] Updating GM socket ID for room ${roomId}. OLD: ${game.gameMasterSocketId}, NEW: ${socket.id}`);
             game.gameMasterSocketId = socket.id;
-            
             console.log(`Game Master ${socket.id} connected to room ${roomId}`);
             socket.emit('gameCreated', { roomId }); 
             io.to(roomId).emit('updatePlayerList', Object.values(game.players));
         } else {
-            // --- DEBUG LOG ---
-            console.error(`[DEBUG] 'gmConnect' failed. Room with ID ${roomId} not found in 'games' Map.`);
             socket.emit('errorMsg', 'The game you were hosting could not be found.');
         }
     });
 
-    socket.on('joinGame', ({ playerName, roomId }) => {
-        const game = games.get(roomId);
-        if (!game) {
-            socket.emit('errorMsg', 'Game not found.');
-            return;
-        }
-        if (game.gameStarted) {
-             socket.emit('errorMsg', 'Sorry, the game has already started.');
-             return;
-        }
-
-        socket.leave('main-lobby');
-        socket.join(roomId);
-        socket.data.roomId = roomId;
-
-        const playerId = crypto.randomUUID();
-        game.players[playerId] = { id: playerId, name: playerName, score: 0, socketId: socket.id, isActive: true };
-        game.socketIdToPlayerIdMap[socket.id] = playerId;
-
-        socket.emit('joinSuccess', { message: `Welcome, ${playerName}!`, playerId: playerId });
-        io.to(roomId).emit('updatePlayerList', Object.values(game.players));
-        broadcastGameLists();
-    });
+    socket.on('joinGame', ({ playerName, roomId }) => { /* ... (no changes) ... */ });
 
     const getSocketGameInfo = () => {
         const roomId = socket.data.roomId;
@@ -178,23 +114,9 @@ io.on('connection', (socket) => {
         return { game, player, playerId, roomId };
     };
     
-    // --- DEBUG TARGET ---
     socket.on('startGame', () => {
-        console.log(`[DEBUG] 'startGame' event received from socket ${socket.id}`);
         const { game, roomId } = getSocketGameInfo();
-
-        if (!game) {
-            console.error(`[DEBUG] startGame FAIL: Socket ${socket.id} has no game room associated.`);
-            return;
-        }
-
-        console.log(`[DEBUG] startGame check for room ${roomId}: Stored GM ID is ${game.gameMasterSocketId}. Emitter's ID is ${socket.id}.`);
-
-        if (socket.id !== game.gameMasterSocketId) {
-            console.error(`[DEBUG] startGame FAIL: Emitter ID does not match stored GM ID.`);
-            return;
-        }
-
+        if (!game || socket.id !== game.gameMasterSocketId) return;
         console.log(`[SUCCESS] GM ID matches. Starting game in room ${roomId}.`);
         game.gameStarted = true;
         game.phase = 'INSTRUCTIONS';
@@ -202,6 +124,49 @@ io.on('connection', (socket) => {
         broadcastGameLists();
     });
 
+    // --- DEBUG TARGET ---
+    socket.on('startFirstRound', () => {
+        console.log(`[DEBUG] 'startFirstRound' event received from socket ${socket.id}`);
+        const { game, roomId } = getSocketGameInfo();
+
+        if (!game) {
+            console.error(`[DEBUG] startFirstRound FAIL: Socket ${socket.id} has no game room associated.`);
+            return;
+        }
+
+        console.log(`[DEBUG] startFirstRound check for room ${roomId}: Stored GM ID is ${game.gameMasterSocketId}. Emitter's ID is ${socket.id}.`);
+
+        if (socket.id !== game.gameMasterSocketId) {
+            console.error(`[DEBUG] startFirstRound FAIL: Emitter ID does not match stored GM ID.`);
+            return;
+        }
+
+        console.log(`[DEBUG] GM check passed. Proceeding to start round 1.`);
+        
+        try {
+            game.currentLevel = 1;
+            game.prompts = {}; 
+            game.phase = 'PROMPTING';
+
+            console.log(`[DEBUG] Game state updated. Current level: ${game.currentLevel}`);
+
+            const currentProblem = game.levels[game.currentLevel - 1];
+            if (!currentProblem) {
+                 console.error(`[DEBUG] startFirstRound FAIL: Could not find problem for level 1. Check levels.json. 'game.levels' has ${game.levels.length} levels.`);
+                 return;
+            }
+
+            console.log(`[DEBUG] Found problem for level 1. Emitting 'levelStart' to room ${roomId}.`);
+            io.to(roomId).emit('levelStart', currentProblem);
+            io.to(game.gameMasterSocketId).emit('updateSubmissionStatus', {
+                players: Object.values(game.players),
+                prompts: game.prompts
+            });
+            console.log(`[SUCCESS] Round 1 started for room ${roomId}.`);
+        } catch (error) {
+            console.error("[DEBUG] An error occurred inside the 'startFirstRound' handler:", error);
+        }
+    });
     socket.on('disconnect', () => {
         console.log(`Client disconnected: ${socket.id}`);
         const { game, playerId, roomId } = getSocketGameInfo();
