@@ -43,10 +43,89 @@ const solutionModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 let games = new Map(); // Use a Map to store all active game rooms by ID.
 
 // --- Helper Functions ---
-function getGameLists() { /* ... (no changes) ... */ }
-function broadcastGameLists() { /* ... (no changes) ... */ }
-async function getGeminiRanking(playerPrompts, problem) { /* ... (no changes) ... */ }
-async function getGeminiSolution(winningPrompt, problem) { /* ... (no changes) ... */ }
+function getGameLists() {
+    const joinableGames = [];
+    const activeGames = [];
+    for (const [roomId, game] of games.entries()) {
+        const gameInfo = {
+            roomId: roomId,
+            roomName: game.roomName,
+            levelPackName: game.levelPackName,
+            playerCount: Object.values(game.players).filter(p => p.isActive).length,
+        };
+        if (game.gameStarted) {
+            activeGames.push(gameInfo);
+        } else {
+            joinableGames.push(gameInfo);
+        }
+    }
+    return { joinableGames, activeGames };
+}
+
+function broadcastGameLists() {
+    io.to('main-lobby').emit('updateGameList', getGameLists());
+}
+
+async function getGeminiRanking(playerPrompts, problem) {
+    console.log("Calling Gemini API for structured ranking...");
+    const metaPrompt = `
+        You are a judge for an AI a prompt-crafting game. Your personality is a brilliant prompt engineer who has used AI on a daily basis seen it all. You are also a teacher who guides others to writing better prompts.
+
+        The problem is: "${problem}"
+
+        Here are the user prompts to rank:
+        ${JSON.stringify(playerPrompts, null, 2)}
+
+        Your task is to rank these prompts from best to worst.
+        - For the top-ranked prompt, explain why it was selected as the top prompt and what if anything could be improved.
+        - For lower-ranked prompts, point out the good things about their prompts but also what the flaws were.
+        - For joke or troll prompts, rank them last and explain clearly why they were ranked last.
+
+        Return a single, valid JSON object with a key "rankings". The value should be an array of objects, ordered from best prompt to worst. Each object must contain the player's "id", "name", and a short "reason" (1-2 sentences) embodying your personality.
+
+        Example JSON output format:
+        { "rankings": [ { "id": "some_id_1", "name": "Alice", "reason": "Finally! A prompt with some substance. It's almost like you've done this before. Well done." }, { "id": "some_id_2", "name": "Bob", "reason": "Did you even read the problem? This is so vague, I'd expect the AI to return a recipe for banana bread." } ] }
+    `;
+
+    try {
+        const result = await model.generateContent(metaPrompt);
+        const text = result.response.text();
+        const parsedResponse = JSON.parse(text);
+        if (parsedResponse.rankings && Array.isArray(parsedResponse.rankings)) {
+            console.log("Successfully received and parsed structured ranking.");
+            return parsedResponse.rankings;
+        } else { throw new Error("Invalid JSON structure received from API."); }
+    } catch (error) {
+        console.error("Error in getGeminiRanking:", error);
+        console.log("Falling back to random ranking.");
+        const shuffled = playerPrompts.sort(() => Math.random() - 0.5);
+        return shuffled.map(p => ({ ...p, reason: "Judge Lexi's processor overheated from reading so many bad prompts. Ranks were assigned by a random number generator while she gets a new fan." }));
+    }
+}
+
+async function getGeminiSolution(winningPrompt, problem) {
+    console.log("Calling Gemini API for the solution...");
+    const metaPrompt = `
+        You are a senior software engineering AI assistant. Your task is to provide a high-quality, expert-level solution to the following problem, based *only* on the user's provided prompt. Format your answer clearly using markdown.
+
+        ---
+        **THE ORIGINAL PROBLEM:**
+        ${problem}
+        ---
+        **THE WINNING PROMPT:**
+        ${winningPrompt}
+        ---
+
+        Now, generate the solution based on the winning prompt.
+    `;
+    try {
+        const result = await solutionModel.generateContent(metaPrompt);
+        return result.response.text();
+    } catch (error) {
+        console.error("Error in getGeminiSolution:", error);
+        return `The AI tried to generate a solution for the prompt "${winningPrompt}" but encountered an error. It might have been too powerful!`;
+    }
+}
 
 
 // --- Socket.IO Connection Handling ---
@@ -102,7 +181,29 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('joinGame', ({ playerName, roomId }) => { /* ... (no changes) ... */ });
+    socket.on('joinGame', ({ playerName, roomId }) => {
+        const game = games.get(roomId);
+        if (!game) {
+            socket.emit('errorMsg', 'Game not found.');
+            return;
+        }
+        if (game.gameStarted) {
+             socket.emit('errorMsg', 'Sorry, the game has already started.');
+             return;
+        }
+
+        socket.leave('main-lobby');
+        socket.join(roomId);
+        socket.data.roomId = roomId;
+
+        const playerId = crypto.randomUUID();
+        game.players[playerId] = { id: playerId, name: playerName, score: 0, socketId: socket.id, isActive: true };
+        game.socketIdToPlayerIdMap[socket.id] = playerId;
+
+        socket.emit('joinSuccess', { message: `Welcome, ${playerName}!`, playerId: playerId });
+        io.to(roomId).emit('updatePlayerList', Object.values(game.players));
+        broadcastGameLists();
+    });
 
     const getSocketGameInfo = () => {
         const roomId = socket.data.roomId;
@@ -167,6 +268,7 @@ io.on('connection', (socket) => {
             console.error("[DEBUG] An error occurred inside the 'startFirstRound' handler:", error);
         }
     });
+
     socket.on('disconnect', () => {
         console.log(`Client disconnected: ${socket.id}`);
         const { game, playerId, roomId } = getSocketGameInfo();
@@ -197,6 +299,23 @@ io.on('connection', (socket) => {
         }
     });
     
+    socket.on('submitPrompt', (prompt) => {
+        const { game, playerId, roomId } = getSocketGameInfo();
+        if (!game || !playerId || game.prompts[playerId]) return;
+        
+        console.log(`Prompt received in room ${roomId} from ${game.players[playerId].name}`);
+        game.prompts[playerId] = prompt;
+        socket.emit('promptAccepted');
+        io.to(game.gameMasterSocketId).emit('updateSubmissionStatus', {
+            players: Object.values(game.players), prompts: game.prompts
+        });
+        
+        const activePlayers = Object.values(game.players).filter(p => p.isActive);
+        if (Object.keys(game.prompts).length >= activePlayers.length) {
+            io.to(game.gameMasterSocketId).emit('allPromptsReceived');
+        }
+    });
+
     socket.on('closeSubmissions', async () => {
         const { game, roomId } = getSocketGameInfo();
         if (!game || socket.id !== game.gameMasterSocketId) return;
@@ -275,6 +394,5 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('gameOver', { finalLeaderboard });
     });
 });
-
 
 server.listen(PORT, () => { console.log(`Server listening on port ${PORT}`); });
