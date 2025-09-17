@@ -66,8 +66,8 @@ function broadcastGameLists() {
     io.to('main-lobby').emit('updateGameList', getGameLists());
 }
 
-async function getGeminiRanking(playerPrompts, problem) { /* ... (no changes to this function) ... */ }
-async function getGeminiSolution(winningPrompt, problem) { /* ... (no changes to this function) ... */ }
+async function getGeminiRanking(playerPrompts, problem) { /* ... (no changes) ... */ }
+async function getGeminiSolution(winningPrompt, problem) { /* ... (no changes) ... */ }
 
 
 // --- Socket.IO Connection Handling ---
@@ -80,8 +80,6 @@ io.on('connection', (socket) => {
     socket.on('createGame', (payload) => {
         if (!payload || !payload.roomName || !payload.levelPackName) {
             console.error(`Malformed 'createGame' event received from socket ${socket.id}. Payload:`, payload);
-            // Optionally emit an error back to the client if it's acting weirdly.
-            // socket.emit('errorMsg', 'Invalid request to create game.'); 
             return; 
         }
         const { roomName, levelPackName } = payload;
@@ -105,6 +103,7 @@ io.on('connection', (socket) => {
             lastRoundResults: null,
             levels: selectedLevels,
             socketIdToPlayerIdMap: {},
+            deletionTimer: null, // Add a property to hold the deletion timer
         };
         games.set(roomId, newGame);
 
@@ -120,11 +119,19 @@ io.on('connection', (socket) => {
     socket.on('gmConnect', ({ roomId }) => {
         const game = games.get(roomId);
         if (game) {
+            // --- FIX: When the GM connects, cancel any pending deletion timer ---
+            if (game.deletionTimer) {
+                clearTimeout(game.deletionTimer);
+                game.deletionTimer = null;
+                console.log(`Deletion timer for room ${roomId} cancelled.`);
+            }
+            // --- END FIX ---
+
             socket.leave('main-lobby');
             socket.join(roomId);
             socket.data.roomId = roomId;
-            game.gameMasterSocketId = socket.id;
-            console.log(`Game Master ${socket.id} reconnected to room ${roomId}`);
+            game.gameMasterSocketId = socket.id; // CRITICAL: Update to the new socket ID
+            console.log(`Game Master ${socket.id} connected to room ${roomId}`);
             socket.emit('gameCreated', { roomId }); // Re-confirm to GM
             io.to(roomId).emit('updatePlayerList', Object.values(game.players));
         } else {
@@ -156,7 +163,6 @@ io.on('connection', (socket) => {
         broadcastGameLists();
     });
 
-    // --- ALL SUBSEQUENT EVENTS ARE ROOM-AWARE ---
     const getSocketGameInfo = () => {
         const roomId = socket.data.roomId;
         if (!roomId) return { game: null, player: null, playerId: null, roomId: null };
@@ -166,49 +172,6 @@ io.on('connection', (socket) => {
         const player = playerId ? game.players[playerId] : null;
         return { game, player, playerId, roomId };
     };
-
-    socket.on('startGame', () => {
-        const { game, roomId } = getSocketGameInfo();
-        if (!game || socket.id !== game.gameMasterSocketId) return;
-        
-        console.log(`Game starting in room ${roomId}`);
-        game.gameStarted = true;
-        game.phase = 'INSTRUCTIONS';
-        io.to(roomId).emit('showInstructions');
-        broadcastGameLists();
-    });
-
-    socket.on('startFirstRound', () => {
-        const { game, roomId } = getSocketGameInfo();
-        if (!game || socket.id !== game.gameMasterSocketId) return;
-        
-        game.currentLevel = 1;
-        game.prompts = {}; 
-        game.phase = 'PROMPTING';
-
-        const currentProblem = game.levels[game.currentLevel - 1];
-        io.to(roomId).emit('levelStart', currentProblem);
-        io.to(game.gameMasterSocketId).emit('updateSubmissionStatus', {
-            players: Object.values(game.players), prompts: game.prompts
-        });
-    });
-
-    socket.on('submitPrompt', (prompt) => {
-        const { game, playerId, roomId } = getSocketGameInfo();
-        if (!game || !playerId || game.prompts[playerId]) return;
-        
-        console.log(`Prompt received in room ${roomId} from ${game.players[playerId].name}`);
-        game.prompts[playerId] = prompt;
-        socket.emit('promptAccepted');
-        io.to(game.gameMasterSocketId).emit('updateSubmissionStatus', {
-            players: Object.values(game.players), prompts: game.prompts
-        });
-        
-        const activePlayers = Object.values(game.players).filter(p => p.isActive);
-        if (Object.keys(game.prompts).length >= activePlayers.length) {
-            io.to(game.gameMasterSocketId).emit('allPromptsReceived');
-        }
-    });
 
     socket.on('disconnect', () => {
         console.log(`Client disconnected: ${socket.id}`);
@@ -228,6 +191,16 @@ io.on('connection', (socket) => {
                 }
             }, 5000); // 5-second grace period for the GM to reconnect
         } 
+        else if (playerId && game.players[playerId]) {
+            console.log(`Player ${game.players[playerId].name} disconnected from room ${roomId}.`);
+            game.players[playerId].isActive = false;
+            delete game.socketIdToPlayerIdMap[socket.id];
+            io.to(roomId).emit('updatePlayerList', Object.values(game.players));
+            io.to(game.gameMasterSocketId).emit('updateSubmissionStatus', {
+                players: Object.values(game.players), prompts: game.prompts
+            });
+            broadcastGameLists();
+        }
     });
     
     socket.on('closeSubmissions', async () => {
