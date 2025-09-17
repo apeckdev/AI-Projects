@@ -78,7 +78,6 @@ io.on('connection', (socket) => {
     socket.emit('updateGameList', getGameLists());
 
     socket.on('createGame', (payload) => {
-        // --- FIX: Add a guard to prevent crash on undefined payload ---
         if (!payload || !payload.roomName || !payload.levelPackName) {
             console.error(`Malformed 'createGame' event received from socket ${socket.id}. Payload:`, payload);
             // Optionally emit an error back to the client if it's acting weirdly.
@@ -86,7 +85,6 @@ io.on('connection', (socket) => {
             return; 
         }
         const { roomName, levelPackName } = payload;
-        // --- END FIX ---
 
         const roomId = crypto.randomUUID();
         const selectedLevels = levelPacks[levelPackName];
@@ -216,23 +214,20 @@ io.on('connection', (socket) => {
         console.log(`Client disconnected: ${socket.id}`);
         const { game, playerId, roomId } = getSocketGameInfo();
 
-        if (!game) return; // They were in the main lobby, no action needed.
+        if (!game) return;
 
         if (socket.id === game.gameMasterSocketId) {
-            console.log(`Game Master disconnected from room ${roomId}. Ending game.`);
-            io.to(roomId).emit('gameReset', 'The Game Master has disconnected. The game has ended.');
-            games.delete(roomId);
-            broadcastGameLists();
-        } else if (playerId && game.players[playerId]) {
-            console.log(`Player ${game.players[playerId].name} disconnected from room ${roomId}.`);
-            game.players[playerId].isActive = false;
-            delete game.socketIdToPlayerIdMap[socket.id];
-            io.to(roomId).emit('updatePlayerList', Object.values(game.players));
-            io.to(game.gameMasterSocketId).emit('updateSubmissionStatus', {
-                players: Object.values(game.players), prompts: game.prompts
-            });
-            broadcastGameLists();
-        }
+            console.log(`Game Master disconnected from room ${roomId}. Starting 5-second deletion timer.`);
+            game.deletionTimer = setTimeout(() => {
+                const gameStillExists = games.get(roomId);
+                if (gameStillExists) { // Check if game wasn't deleted for other reasons
+                    console.log(`Timer expired for room ${roomId}. Deleting game.`);
+                    io.to(roomId).emit('gameReset', 'The Game Master has disconnected. The game has ended.');
+                    games.delete(roomId);
+                    broadcastGameLists();
+                }
+            }, 5000); // 5-second grace period for the GM to reconnect
+        } 
     });
     
     socket.on('closeSubmissions', async () => {
