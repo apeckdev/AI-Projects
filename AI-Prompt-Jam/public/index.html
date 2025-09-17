@@ -59,7 +59,76 @@
             <p>Waiting for the Game Master to start the game...</p>
         </div>
     </div>
-    
+
+    <div id="instructions-screen" class="screen">
+        <div class="screen-header">How to Play</div>
+        <div class="screen-content">
+            <h2>Instructions</h2>
+            <ul class="instructions-list">
+                <li>A problem will be shown on the screen.</li>
+                <li>Your goal is to write the best prompt to get an AI to solve it.</li>
+                <li>Be creative, specific, and clever!</li>
+                <li>After everyone submits, our AI Judge will rank the prompts.</li>
+                <li>More points are awarded for higher ranks!</li>
+            </ul>
+            <p><i>Waiting for the Game Master to start the first round...</i></p>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="screen-header">Level <span id="level-number"></span></div>
+        <div class="screen-content">
+            <h2>The Problem:</h2>
+            <p id="problem-text"></p>
+            <textarea id="prompt-input" rows="5" placeholder="Enter your AI prompt here..."></textarea>
+            <button id="submit-prompt-button">Submit Prompt</button>
+        </div>
+    </div>
+
+    <div id="waiting-screen" class="screen">
+        <div class="screen-header">Waiting</div>
+        <div class="screen-content">
+            <h2>Prompt Submitted!</h2>
+            <p>Waiting for the other players and the Game Master to continue...</p>
+        </div>
+    </div>
+
+    <div id="results-screen" class="screen">
+        <div class="screen-header">Round Results</div>
+        <div class="screen-content">
+            <div class="problem-recap">
+                <h4>The Problem Was:</h4>
+                <p id="results-problem-text"></p>
+            </div>
+            <h2>Round Winner: <span id="winner-name" style="color: var(--accent-green-dark);"></span></h2>
+            <h4>AI Generated Solution:</h4>
+            <pre class="solution-display" id="ai-solution"></pre>
+            <hr>
+            <h4>This Round's Rankings:</h4>
+            <ul id="round-rankings"></ul>
+            <p><i>Waiting for the Game Master to continue...</i></p>
+        </div>
+    </div>
+
+    <div id="leaderboard-screen" class="screen">
+        <div class="screen-header">Leaderboard</div>
+        <div class="screen-content">
+            <h2>Overall Leaderboard</h2>
+            <ul id="overall-leaderboard"></ul>
+            <p>Waiting for the Game Master to start the next level...</p>
+        </div>
+    </div>
+
+    <div id="game-over-screen" class="screen">
+        <div class="screen-header">Game Over</div>
+        <div class="screen-content">
+            <h1>Game Over!</h1>
+            <h2>Final Standings:</h2>
+            <div id="winner-podium"></div>
+            <p>Thanks for playing!</p>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="client.js"></script>
 </body>
