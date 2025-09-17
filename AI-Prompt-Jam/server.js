@@ -103,7 +103,7 @@ io.on('connection', (socket) => {
             lastRoundResults: null,
             levels: selectedLevels,
             socketIdToPlayerIdMap: {},
-            deletionTimer: null, // Add a property to hold the deletion timer
+            deletionTimer: null,
         };
         games.set(roomId, newGame);
 
@@ -117,24 +117,29 @@ io.on('connection', (socket) => {
     });
 
     socket.on('gmConnect', ({ roomId }) => {
+        console.log(`[DEBUG] 'gmConnect' event received for room ${roomId} from socket ${socket.id}`);
         const game = games.get(roomId);
         if (game) {
-            // --- FIX: When the GM connects, cancel any pending deletion timer ---
             if (game.deletionTimer) {
                 clearTimeout(game.deletionTimer);
                 game.deletionTimer = null;
-                console.log(`Deletion timer for room ${roomId} cancelled.`);
+                console.log(`[DEBUG] Deletion timer for room ${roomId} cancelled.`);
             }
-            // --- END FIX ---
 
             socket.leave('main-lobby');
             socket.join(roomId);
             socket.data.roomId = roomId;
-            game.gameMasterSocketId = socket.id; // CRITICAL: Update to the new socket ID
+            
+            // --- DEBUG LOG ---
+            console.log(`[DEBUG] Updating GM socket ID for room ${roomId}. OLD: ${game.gameMasterSocketId}, NEW: ${socket.id}`);
+            game.gameMasterSocketId = socket.id;
+            
             console.log(`Game Master ${socket.id} connected to room ${roomId}`);
-            socket.emit('gameCreated', { roomId }); // Re-confirm to GM
+            socket.emit('gameCreated', { roomId }); 
             io.to(roomId).emit('updatePlayerList', Object.values(game.players));
         } else {
+            // --- DEBUG LOG ---
+            console.error(`[DEBUG] 'gmConnect' failed. Room with ID ${roomId} not found in 'games' Map.`);
             socket.emit('errorMsg', 'The game you were hosting could not be found.');
         }
     });
@@ -172,6 +177,30 @@ io.on('connection', (socket) => {
         const player = playerId ? game.players[playerId] : null;
         return { game, player, playerId, roomId };
     };
+    
+    // --- DEBUG TARGET ---
+    socket.on('startGame', () => {
+        console.log(`[DEBUG] 'startGame' event received from socket ${socket.id}`);
+        const { game, roomId } = getSocketGameInfo();
+
+        if (!game) {
+            console.error(`[DEBUG] startGame FAIL: Socket ${socket.id} has no game room associated.`);
+            return;
+        }
+
+        console.log(`[DEBUG] startGame check for room ${roomId}: Stored GM ID is ${game.gameMasterSocketId}. Emitter's ID is ${socket.id}.`);
+
+        if (socket.id !== game.gameMasterSocketId) {
+            console.error(`[DEBUG] startGame FAIL: Emitter ID does not match stored GM ID.`);
+            return;
+        }
+
+        console.log(`[SUCCESS] GM ID matches. Starting game in room ${roomId}.`);
+        game.gameStarted = true;
+        game.phase = 'INSTRUCTIONS';
+        io.to(roomId).emit('showInstructions');
+        broadcastGameLists();
+    });
 
     socket.on('disconnect', () => {
         console.log(`Client disconnected: ${socket.id}`);
@@ -183,13 +212,13 @@ io.on('connection', (socket) => {
             console.log(`Game Master disconnected from room ${roomId}. Starting 5-second deletion timer.`);
             game.deletionTimer = setTimeout(() => {
                 const gameStillExists = games.get(roomId);
-                if (gameStillExists) { // Check if game wasn't deleted for other reasons
+                if (gameStillExists) {
                     console.log(`Timer expired for room ${roomId}. Deleting game.`);
                     io.to(roomId).emit('gameReset', 'The Game Master has disconnected. The game has ended.');
                     games.delete(roomId);
                     broadcastGameLists();
                 }
-            }, 5000); // 5-second grace period for the GM to reconnect
+            }, 5000); 
         } 
         else if (playerId && game.players[playerId]) {
             console.log(`Player ${game.players[playerId].name} disconnected from room ${roomId}.`);
